@@ -18,7 +18,7 @@ pub enum EncodingError {
   /// 编码时遇到目标编码无法表示的字符（fatal 模式）。
   /// 第一个参数是码点值，第二个是它在输入中的字符位置。
   Unmappable(Int, Int)
-} derive(Eq, Show, @debug.Debug)
+} derive(Eq, @debug.Debug)
 
 ///|
 /// 流式解码器：`consume` 逐块喂入字节，`finish` 冲刷结尾。

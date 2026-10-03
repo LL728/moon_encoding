@@ -84,7 +84,8 @@ test "windows-1252: decode->encode round-trips every byte value 0x00..0xFF" {
         @test.assert_eq(out.length(), 1)
         @test.assert_eq(out[0].to_int(), byte)
       }
-      Err(e) => abort("byte 0x\{byte} did not round-trip: \{e}")
+      Err(e) =>
+        abort("byte 0x\{byte} did not round-trip: " + @debug.to_string(e))
     }
   }
 }
@@ -101,7 +102,8 @@ test "windows-1252: encode->decode round-trips every encodable code point" {
         @test.assert_eq(out[0].to_int(), expected_byte)
         @test.assert_eq(single_byte_decode(windows_1252_decode, out), text)
       }
-      Err(e) => abort("code point 0x\{cp} did not encode: \{e}")
+      Err(e) =>
+        abort("code point 0x\{cp} did not encode: " + @debug.to_string(e))
     }
   }
 }

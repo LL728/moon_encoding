@@ -23,7 +23,7 @@ test "decode: C1 control bytes follow WHATWG (not Python cp1252)" {
         @test.assert_eq(s.get_char(i).unwrap().to_int(), expected[i])
       }
     }
-    Err(e) => abort("unexpected error: \{e}")
+    Err(e) => abort("unexpected error: " + @debug.to_string(e))
   }
 }
 
@@ -43,7 +43,8 @@ test "decode: unknown label and valid-but-unimplemented encoding are distinct er
   match decode(input, "gbk") {
     Err(EncodingError::UnsupportedEncoding(name)) =>
       @test.assert_eq(name, "GBK")
-    other => abort("expected UnsupportedEncoding, got \{other}")
+    other =>
+      abort("expected UnsupportedEncoding, got " + @debug.to_string(other))
   }
 }
 
@@ -57,7 +58,7 @@ test "encode: mappable text produces the expected bytes" {
         @test.assert_eq(out[i].to_int(), expected[i])
       }
     }
-    Err(e) => abort("unexpected error: \{e}")
+    Err(e) => abort("unexpected error: " + @debug.to_string(e))
   }
 }
 
@@ -65,7 +66,7 @@ test "encode: mappable text produces the expected bytes" {
 test "encode: empty text encodes to empty bytes" {
   match encode("", "windows-1252") {
     Ok(out) => @test.assert_eq(out.length(), 0)
-    Err(e) => abort("unexpected error: \{e}")
+    Err(e) => abort("unexpected error: " + @debug.to_string(e))
   }
 }
 
@@ -91,12 +92,13 @@ test "encode: unmappable characters fail with code point and position (fatal mod
 test "encode: unknown label and unimplemented encodings are distinct errors" {
   match encode("x", "no-such-label") {
     Err(EncodingError::UnknownLabel(l)) => @test.assert_eq(l, "no-such-label")
-    other => abort("expected UnknownLabel, got \{other}")
+    other => abort("expected UnknownLabel, got " + @debug.to_string(other))
   }
   match encode("x", "utf-8") {
     Err(EncodingError::UnsupportedEncoding(name)) =>
       @test.assert_eq(name, "UTF-8")
-    other => abort("expected UnsupportedEncoding, got \{other}")
+    other =>
+      abort("expected UnsupportedEncoding, got " + @debug.to_string(other))
   }
 }
 
@@ -113,13 +115,13 @@ test "streaming: 1200 deterministic random partitions equal whole-input decode" 
   let n = input.length()
   let whole = match Decoder::new("windows-1252") {
     Ok(d) => d.consume(input)
-    Err(e) => abort("unexpected error: \{e}")
+    Err(e) => abort("unexpected error: " + @debug.to_string(e))
   }
   let mut seed = 12345
   for _round in 0..<1200 {
     let decoder = match Decoder::new("windows-1252") {
       Ok(d) => d
-      Err(e) => abort("unexpected error: \{e}")
+      Err(e) => abort("unexpected error: " + @debug.to_string(e))
     }
     let mut out = ""
     let mut pos = 0
