@@ -5,6 +5,7 @@
 // (see LICENSE-WHATWG in this repository).
 
 // windows-1252: byte 0x80..0xFF -> code point; -1 = decode error -> U+FFFD
+
 ///|
 let windows_1252_decode : Array[Int] = [
   0x20AC, 0x0081, 0x201A, 0x0192, 0x201E, 0x2026, 0x2020, 0x2021, 0x02C6, 0x2030,
