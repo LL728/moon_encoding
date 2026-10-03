@@ -98,9 +98,13 @@ def gen_single_byte(indexes) -> str:
             f"{len(pairs)} encodable high bytes"
         )
         parts.append(f"// {name}: byte 0x80..0xFF -> code point; -1 = decode error -> U+FFFD")
+        parts.append("")
+        parts.append("///|")
         parts.append(f"let {var.lower()}_decode : Array[Int] = {fmt_array(decode)}")
         parts.append("")
         parts.append(f"// {name}: (code point, byte) pairs sorted by code point, for encoding")
+        parts.append("")
+        parts.append("///|")
         parts.append(f"let {var.lower()}_encode : Array[Int] = {fmt_array(reverse)}")
         parts.append("")
     return "\n".join(parts)
