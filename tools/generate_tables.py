@@ -67,7 +67,8 @@ def gen_labels(encodings) -> str:
     for heading in encodings:
         for enc in heading["encodings"]:
             for label in enc["labels"]:
-                lines.append(f'    "{label}" => Some("{enc["name"]}"),')
+                # MoonBit match arms are separated by newlines, not commas.
+                lines.append(f'    "{label}" => Some("{enc["name"]}")')
                 n += 1
     lines += ["    _ => None", "  }", "}", ""]
     print(f"gen_label: {n} labels -> {sum(len(h['encodings']) for h in encodings)} encodings")
@@ -97,10 +98,10 @@ def gen_single_byte(indexes) -> str:
             f"{len(pairs)} encodable high bytes"
         )
         parts.append(f"// {name}: byte 0x80..0xFF -> code point; -1 = decode error -> U+FFFD")
-        parts.append(f"let {var}_DECODE : Array[Int] = {fmt_array(decode)}")
+        parts.append(f"let {var.lower()}_decode : Array[Int] = {fmt_array(decode)}")
         parts.append("")
         parts.append(f"// {name}: (code point, byte) pairs sorted by code point, for encoding")
-        parts.append(f"let {var}_ENCODE : Array[Int] = {fmt_array(reverse)}")
+        parts.append(f"let {var.lower()}_encode : Array[Int] = {fmt_array(reverse)}")
         parts.append("")
     return "\n".join(parts)
 
