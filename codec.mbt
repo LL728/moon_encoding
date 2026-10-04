@@ -21,10 +21,18 @@ pub enum EncodingError {
 } derive(Eq, @debug.Debug)
 
 ///|
+/// 解码器内部状态：单字节表驱动，或中文多字节状态机（GBK/gb18030 共用——
+/// 规范规定 GBK 的解码器就是 gb18030 的解码器）。
+enum DecoderState {
+  SingleByte(Array[Int])
+  Chinese(ChineseState)
+}
+
+///|
 /// 流式解码器：`consume` 逐块喂入字节，`finish` 冲刷结尾。
-/// 字段私有：可解码的编码在构造时已解析成表，放开写会让外部破坏状态。
+/// 字段私有：可解码的编码在构造时已解析成状态，放开写会让外部破坏状态。
 pub struct Decoder {
-  priv decode_table : Array[Int]
+  priv state : DecoderState
 }
 
 ///|
@@ -36,10 +44,21 @@ pub fn Decoder::new(label : String) -> Result[Decoder, EncodingError] {
     Ok(encoding) =>
       match single_byte_tables(encoding) {
         Some((decode_table, _)) => {
-          let decoder : Decoder = { decode_table, }
+          let decoder : Decoder = {
+            state: DecoderState::SingleByte(decode_table),
+          }
           Ok(decoder)
         }
-        None => Err(EncodingError::UnsupportedEncoding(encoding))
+        None =>
+          match encoding {
+            "GBK" | "gb18030" => {
+              let decoder : Decoder = {
+                state: DecoderState::Chinese(ChineseState::new()),
+              }
+              Ok(decoder)
+            }
+            _ => Err(EncodingError::UnsupportedEncoding(encoding))
+          }
       }
   }
 }
@@ -48,22 +67,31 @@ pub fn Decoder::new(label : String) -> Result[Decoder, EncodingError] {
 /// 喂入一个字节块，返回新解出的文本。
 /// 单字节编码无跨块状态：任意切分的结果与整段解码一致。
 pub fn Decoder::consume(self : Decoder, chunk : Bytes) -> String {
-  single_byte_decode(self.decode_table, chunk)
+  match self.state {
+    DecoderState::SingleByte(table) => single_byte_decode(table, chunk)
+    DecoderState::Chinese(state) => chinese_consume(state, chunk)
+  }
 }
 
 ///|
-/// 结束流，冲刷未完成的输入。单字节编码没有滞留字节，恒返回空串；
-/// 多字节编码（后续里程碑）会在这里把截断的字节序列补成 U+FFFD。
-pub fn Decoder::finish(_self : Decoder) -> String {
-  ""
+/// 结束流，冲刷未完成的输入。单字节编码没有滞留字节，返回空串；
+/// 中文编码在这里按规范 end-of-queue 把截断序列补成单个 U+FFFD。
+pub fn Decoder::finish(self : Decoder) -> String {
+  match self.state {
+    DecoderState::SingleByte(_) => ""
+    DecoderState::Chinese(state) => chinese_finish(state)
+  }
 }
 
 ///|
-/// 本构建已接线的单字节编码（WHATWG 规范名）——label 解析覆盖全部 40 种编码，
+/// 本构建已接线的编码（WHATWG 规范名）——label 解析覆盖全部 40 种编码，
 /// 其中这些可实际编解码；返回新数组，改它不影响内部状态。
 pub fn supported_encodings() -> Array[String] {
   let out : Array[String] = []
   for name in single_byte_names {
+    out.push(name)
+  }
+  for name in multi_byte_names {
     out.push(name)
   }
   out
@@ -95,7 +123,12 @@ pub fn encode(text : String, label : String) -> Result[Bytes, EncodingError] {
     Ok(encoding) =>
       match single_byte_tables(encoding) {
         Some((_, encode_table)) => single_byte_encode(encode_table, text)
-        None => Err(EncodingError::UnsupportedEncoding(encoding))
+        None =>
+          match encoding {
+            "GBK" => chinese_encode(text, true)
+            "gb18030" => chinese_encode(text, false)
+            _ => Err(EncodingError::UnsupportedEncoding(encoding))
+          }
       }
   }
 }
