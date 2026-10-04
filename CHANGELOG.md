@@ -5,6 +5,14 @@
 
 ## [未发布]
 
+## [0.1.1] - 2026-10-04
+
+### 修复
+- README 的 MoonBit 示例改为「导入写在 `moon.pkg`」——MoonBit 不再在 `.mbt`
+  文件内解析 `import`，旧写法在新工具链下会直接报错（消费工程实测复现并验证）
+
+## [0.1.0] - 2026-10-04
+
 ### 新增
 - WHATWG label 解析：228 个 label、ASCII 大小写不敏感、别名归一（如
   `latin1` / `ascii` / `iso-8859-1` → `windows-1252`）
@@ -63,3 +71,4 @@
   生成物新鲜度、命令行端到端（windows-1252 / iso-8859 / koi8-r /
   GBK↔gb18030 / gb18030 四字节往返 / Big5 / Shift_JIS / EUC-JP 含 SS3 / EUC-KR / UTF-8 往返 / UTF-16 解码 + 编码器拒绝 + 错误路径）
 - 双许可证：代码 Apache-2.0，WHATWG 数据 BSD-3-Clause（`LICENSE-WHATWG`）
+- 适配 MoonBit 新编译器的 `implicit_impl_as_method`（`EncodingError` 显式 trait 方法提升）

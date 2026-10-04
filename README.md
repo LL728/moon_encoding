@@ -38,10 +38,19 @@ moon add LL728/moon_encoding
 
 ### 一次性解码 / 编码
 
-```moonbit
-import "LL728/moon_encoding"
-import "moonbitlang/core/debug"
+导入声明放在 `moon.pkg`（MoonBit 不在 `.mbt` 文件内解析 `import`）：
 
+```moonbit
+// moon.pkg
+import {
+  "LL728/moon_encoding",
+  "moonbitlang/core/debug",
+}
+```
+
+`.mbt` 中使用：
+
+```moonbit
 pub fn example(bytes : Bytes) -> Unit {
   // 字节 -> 文本（解码错误按规范替换为 U+FFFD）
   match @moon_encoding.decode(bytes, "windows-1252") {
