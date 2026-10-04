@@ -75,11 +75,11 @@ jobs:
           fi
 
           # 合法但未实现的编码 -> 非零退出且消息可读
-          if moon run cmd/main --target wasm-gc -- decode big5 \
+          if moon run cmd/main --target wasm-gc -- decode iso-2022-jp \
             "$RUNNER_TEMP/in.bin" "$RUNNER_TEMP/x.txt" > "$RUNNER_TEMP/e.txt"; then
             echo "expected failure for unimplemented encoding"; exit 1
           fi
-          grep -q 'UnsupportedEncoding("Big5")' "$RUNNER_TEMP/e.txt"
+          grep -q 'UnsupportedEncoding("ISO-2022-JP")' "$RUNNER_TEMP/e.txt"
 
           # 不可映射字符 -> 非零退出且报出码点与位置
           printf '中文' > "$RUNNER_TEMP/zh.txt"
