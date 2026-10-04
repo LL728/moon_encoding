@@ -88,3 +88,21 @@ jobs:
             echo "expected failure for unmappable characters"; exit 1
           fi
           grep -q 'Unmappable(20013, 0)' "$RUNNER_TEMP/e.txt"
+
+          # 跨编码端到端（F2 接线）：iso-8859-1 解出 -> iso-8859-2 编回同字节
+          printf 'caf\xe9' > "$RUNNER_TEMP/latin.bin"
+          moon run cmd/main --target wasm-gc -- decode iso-8859-1 \
+            "$RUNNER_TEMP/latin.bin" "$RUNNER_TEMP/latin.txt"
+          python3 -c 'import sys; t = open(sys.argv[1], encoding="utf-8").read(); assert t == "café", repr(t)' "$RUNNER_TEMP/latin.txt"
+          moon run cmd/main --target wasm-gc -- encode iso-8859-2 \
+            "$RUNNER_TEMP/latin.txt" "$RUNNER_TEMP/latin2.bin"
+          python3 -c 'import sys; b = open(sys.argv[1], "rb").read(); assert b.hex() == "636166e9", b.hex()' "$RUNNER_TEMP/latin2.bin"
+
+          # koi8-r 原生字符集往返（该编码不含拉丁扩展字母），期望文本由 CPython 现算
+          printf '\xf0\xe1\xe2' > "$RUNNER_TEMP/koi8r.bin"
+          moon run cmd/main --target wasm-gc -- decode koi8-r \
+            "$RUNNER_TEMP/koi8r.bin" "$RUNNER_TEMP/koi8r.txt"
+          moon run cmd/main --target wasm-gc -- encode koi8-r \
+            "$RUNNER_TEMP/koi8r.txt" "$RUNNER_TEMP/koi8r2.bin"
+          cmp "$RUNNER_TEMP/koi8r.bin" "$RUNNER_TEMP/koi8r2.bin"
+          python3 -c 'import sys; expect = bytes.fromhex("f0e1e2").decode("koi8_r"); t = open(sys.argv[1], encoding="utf-8").read(); assert t == expect, t.encode("utf-8").hex()' "$RUNNER_TEMP/koi8r.txt"
