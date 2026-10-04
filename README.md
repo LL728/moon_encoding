@@ -16,9 +16,10 @@ WHATWG Encoding Standard 共定义 40 种编码、228 个 label。
 | 分组 | 编码 | 状态 |
 | --- | --- | --- |
 | 单字节（28 种） | `windows-1252`（含 `latin1` / `ascii` 等别名）、`ISO-8859-2/3/4/5/6/7/8/8-I/10/13/14/15/16`、`windows-874/1250..1258`、`KOI8-R/U`、`IBM866`、`macintosh`、`x-mac-cyrillic` | ✅ 已实现 |
-| 中文 | `GBK` / `gb18030`、`Big5` | ⏳ 计划中 |
+| 中文 | `GBK`（含 `gb2312` / `chinese` 等别名）、`gb18030`（含 4 字节） | ✅ 已实现 |
 | 日韩 | `Shift_JIS`、`EUC-JP`、`EUC-KR` | ⏳ 计划中 |
 | Unicode | `UTF-8`、`UTF-16BE`、`UTF-16LE` | ⏳ 计划中 |
+| 中文（繁体） | `Big5` | ⏳ 计划中 |
 | 其他 | `ISO-2022-JP`、`replacement`、`x-user-defined` | ⏳ 视进度 |
 
 尚未实现的编码会返回明确的 `UnsupportedEncoding` 错误（而不是静默失败），
@@ -61,7 +62,7 @@ pub fn example(bytes : Bytes) -> Unit {
 match @moon_encoding.Decoder::new("windows-1252") {
   Ok(decoder) => {
     let mut text = ""
-    text = text + decoder.consume(chunk) // 单字节编码无跨块状态，任意切分结果与整段一致
+    text = text + decoder.consume(chunk) // 跨块状态在解码器内维护，任意切分结果一致
     text = text + decoder.finish()
   }
   Err(e) => println("创建解码器失败: " + @debug.to_string(e))
@@ -109,9 +110,14 @@ $ echo $?
 - **单元与属性测试**：label 解析、28 张表的结构不变量（128 项解码表、合法非代理码点、
   编码表严格升序唯一）、规范已知映射、windows-1252 的 256 字节全量双向往返、
   全部表项的逐项往返、28 张表共 150 个解码错误位经公共 API 输出 U+FFFD 的
-  replacement 接线、1200 组随机切分的流式等价性。
+  replacement 接线、1200 组随机切分的流式等价性；
+  GBK/gb18030 的规范锚点（0x80→U+20AC、4 字节公式、U+E7C7 特例、18 条 PUA 侧表及其
+  **刻意不对称**行为）、三条 Restore 重放路径、end-of-queue 单 U+FFFD、
+  每个切分点 + 1200 组随机切分的跨块等价、1,087,996 个合法 4 字节 pointer 全量扫描。
 - **Python 差分测试**：以 CPython 各编码的 codec 为独立预言机，
-  **5300+ 黄金向量**由 `tools/gen_vectors.py` 生成并提交进仓库，覆盖全部 28 种单字节编码。
+  **6200+ 黄金向量**由 `tools/gen_vectors.py` 生成并提交进仓库，覆盖 28 种单字节编码
+  与 GBK/gb18030（中文部分经 `tools/chinese_ref.py` 的规范参考实现逐样本与 CPython
+  交叉分类——两边都同意才进向量，已知的 3 处规范/CPython 分歧自动排除并计数）。
   生成器逐字节分类 CPython 与 WHATWG 的关系：`clean`（同值，可用作预言机）进向量，
   `both-error`（两边都报错）由 U+FFFD 单测覆盖，`divergent`（有分歧）排除并逐种记录
   （windows-1252 的 `0x81/0x8D/0x8F/0x90/0x9D`——CPython 报错、WHATWG 映射 C1 控制符——
@@ -132,15 +138,17 @@ moon fmt && moon check --deny-warn && moon test
 | `label.mbt` | label 解析入口（ASCII 大小写不敏感匹配） |
 | `single_byte.mbt` | 28 种单字节编码共用的表驱动编解码引擎 |
 | `codec.mbt` | 公共 API：`EncodingError`、流式 `Decoder`、`decode` / `encode` |
-| `gen_label.mbt` / `gen_single_byte.mbt` | 生成物：label 表与单字节编解码表（勿手改） |
+| `gbk.mbt` | GBK/gb18030 状态机与编码器（规范 §gb18030-decoder/encoder 逐条实现） |
+| `gen_label.mbt` / `gen_single_byte.mbt` / `gen_chinese.mbt` | 生成物：label 表、单字节表、gb18030 索引与 ranges（勿手改） |
 | `gen_w1252_vectors_wbtest.mbt` | 生成物：CPython 差分黄金向量（勿手改） |
 | `cmd/main/` | 文件转码 CLI |
-| `tools/` | 规范数据 vendor、两个生成器 |
+| `tools/` | 规范数据 vendor、表与差分向量生成器、中文规范参考实现（`chinese_ref.py`） |
 
 ## 已知限制
 
-- 已实现范围为 28 种 legacy 单字节编码（`supported_encodings()` 可查询）；
-  `GBK` / `Big5` / `Shift_JIS` / UTF 系等尚未接线，返回 `UnsupportedEncoding`。
+- 已实现范围为 28 种 legacy 单字节编码 + `GBK` / `gb18030`（共 30 种，
+  `supported_encodings()` 可查询）；`Big5` / `Shift_JIS` / `EUC-JP` / `EUC-KR` /
+  UTF 系等尚未接线，返回 `UnsupportedEncoding`。
 - 未实现 BOM 嗅探与 `decode()` 的自动 BOM 覆写；label 由调用方显式给出。
 - 编码侧只提供 fatal 模式原语；规范中 HTML 表单用的 `&#码点;` 替换模式（html 模式）
   尚未提供。

@@ -75,11 +75,11 @@ jobs:
           fi
 
           # 合法但未实现的编码 -> 非零退出且消息可读
-          if moon run cmd/main --target wasm-gc -- decode gbk \
+          if moon run cmd/main --target wasm-gc -- decode big5 \
             "$RUNNER_TEMP/in.bin" "$RUNNER_TEMP/x.txt" > "$RUNNER_TEMP/e.txt"; then
             echo "expected failure for unimplemented encoding"; exit 1
           fi
-          grep -q 'UnsupportedEncoding("GBK")' "$RUNNER_TEMP/e.txt"
+          grep -q 'UnsupportedEncoding("Big5")' "$RUNNER_TEMP/e.txt"
 
           # 不可映射字符 -> 非零退出且报出码点与位置
           printf '中文' > "$RUNNER_TEMP/zh.txt"
@@ -106,3 +106,21 @@ jobs:
             "$RUNNER_TEMP/koi8r.txt" "$RUNNER_TEMP/koi8r2.bin"
           cmp "$RUNNER_TEMP/koi8r.bin" "$RUNNER_TEMP/koi8r2.bin"
           python3 -c 'import sys; expect = bytes.fromhex("f0e1e2").decode("koi8_r"); t = open(sys.argv[1], encoding="utf-8").read(); assert t == expect, t.encode("utf-8").hex()' "$RUNNER_TEMP/koi8r.txt"
+
+          # 中文端到端（F3 接线）：GBK 字节 -> UTF-8 文本 -> gb18030 字节（2 字节段逐字节相同）
+          printf '\xd6\xd0\xce\xc4' > "$RUNNER_TEMP/cn.bin"
+          moon run cmd/main --target wasm-gc -- decode gbk \
+            "$RUNNER_TEMP/cn.bin" "$RUNNER_TEMP/cn.txt"
+          python3 -c 'import sys; b = open(sys.argv[1], "rb").read(); assert b.hex() == "e4b8ade69687", b.hex()' "$RUNNER_TEMP/cn.txt"
+          moon run cmd/main --target wasm-gc -- encode gb18030 \
+            "$RUNNER_TEMP/cn.txt" "$RUNNER_TEMP/cn2.bin"
+          cmp "$RUNNER_TEMP/cn.bin" "$RUNNER_TEMP/cn2.bin"
+
+          # gb18030 四字节真往返：U+1F600 <-> 4 字节 <-> UTF-8
+          python3 -c 'import sys; open(sys.argv[1], "wb").write(chr(0x1F600).encode("gb18030"))' "$RUNNER_TEMP/astral.bin"
+          moon run cmd/main --target wasm-gc -- decode gb18030 \
+            "$RUNNER_TEMP/astral.bin" "$RUNNER_TEMP/astral.txt"
+          python3 -c 'import sys; b = open(sys.argv[1], "rb").read(); assert b.hex() == "f09f9880", b.hex()' "$RUNNER_TEMP/astral.txt"
+          moon run cmd/main --target wasm-gc -- encode gb18030 \
+            "$RUNNER_TEMP/astral.txt" "$RUNNER_TEMP/astral2.bin"
+          cmp "$RUNNER_TEMP/astral.bin" "$RUNNER_TEMP/astral2.bin"
