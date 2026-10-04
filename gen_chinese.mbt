@@ -7,7 +7,9 @@
 // Multi-byte encodings wired in this build (see MULTI_BYTE_WIRED).
 
 ///|
-let multi_byte_names : Array[String] = ["GBK", "gb18030", "Big5", "Shift_JIS"]
+let multi_byte_names : Array[String] = [
+  "GBK", "gb18030", "Big5", "Shift_JIS", "EUC-JP", "EUC-KR",
+]
 
 // index gb18030: pointer (lead-0x81)*190 + trail -> code point; -1 = error
 

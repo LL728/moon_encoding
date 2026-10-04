@@ -28,6 +28,8 @@ enum DecoderState {
   Chinese(ChineseState)
   Big5(LeadState)
   ShiftJis(LeadState)
+  EucJp(EucJpState)
+  EucKr(LeadState)
 }
 
 ///|
@@ -71,6 +73,18 @@ pub fn Decoder::new(label : String) -> Result[Decoder, EncodingError] {
               }
               Ok(decoder)
             }
+            "EUC-JP" => {
+              let decoder : Decoder = {
+                state: DecoderState::EucJp(EucJpState::new()),
+              }
+              Ok(decoder)
+            }
+            "EUC-KR" => {
+              let decoder : Decoder = {
+                state: DecoderState::EucKr(LeadState::new()),
+              }
+              Ok(decoder)
+            }
             _ => Err(EncodingError::UnsupportedEncoding(encoding))
           }
       }
@@ -86,6 +100,8 @@ pub fn Decoder::consume(self : Decoder, chunk : Bytes) -> String {
     DecoderState::Chinese(state) => chinese_consume(state, chunk)
     DecoderState::Big5(state) => big5_consume(state, chunk)
     DecoderState::ShiftJis(state) => shift_jis_consume(state, chunk)
+    DecoderState::EucJp(state) => euc_jp_consume(state, chunk)
+    DecoderState::EucKr(state) => euc_kr_consume(state, chunk)
   }
 }
 
@@ -98,6 +114,8 @@ pub fn Decoder::finish(self : Decoder) -> String {
     DecoderState::Chinese(state) => chinese_finish(state)
     DecoderState::Big5(state) => big5_finish(state)
     DecoderState::ShiftJis(state) => shift_jis_finish(state)
+    DecoderState::EucJp(state) => euc_jp_finish(state)
+    DecoderState::EucKr(state) => euc_kr_finish(state)
   }
 }
 
@@ -147,6 +165,8 @@ pub fn encode(text : String, label : String) -> Result[Bytes, EncodingError] {
             "gb18030" => chinese_encode(text, false)
             "Big5" => big5_encode(text)
             "Shift_JIS" => shift_jis_encode(text)
+            "EUC-JP" => euc_jp_encode(text)
+            "EUC-KR" => euc_kr_encode(text)
             _ => Err(EncodingError::UnsupportedEncoding(encoding))
           }
       }

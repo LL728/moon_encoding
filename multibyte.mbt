@@ -57,6 +57,27 @@ fn big5_sequence_lookup(pointer : Int) -> Array[Int] {
 }
 
 ///|
+/// 在 (码点, 指针) 扁平升序反向表上二分，返回指针；找不到返回 -1。
+/// Big5 / Shift_JIS / EUC-JP / EUC-KR 的编码反向表共用此查找。
+fn encode_index_lookup(encode_index : Array[Int], cp : Int) -> Int {
+  let mut lo = 0
+  let mut hi = encode_index.length() / 2 - 1
+  while lo <= hi {
+    let mid = (lo + hi) / 2
+    let v = encode_index[mid * 2]
+    if v == cp {
+      return encode_index[mid * 2 + 1]
+    }
+    if v < cp {
+      lo = mid + 1
+    } else {
+      hi = mid - 1
+    }
+  }
+  -1
+}
+
+///|
 /// Big5 解码一个字节块（§big5-decoder）。
 fn big5_consume(state : LeadState, input : Bytes) -> String {
   let bytes = input.to_array()
@@ -132,22 +153,7 @@ fn big5_encode(text : String) -> Result[Bytes, EncodingError] {
     if cp < 0x80 {
       out.push(int_to_byte(cp))
     } else {
-      let mut lo = 0
-      let mut hi = big5_encode_index.length() / 2 - 1
-      let mut pointer = -1
-      while lo <= hi {
-        let mid = (lo + hi) / 2
-        let v = big5_encode_index[mid * 2]
-        if v == cp {
-          pointer = big5_encode_index[mid * 2 + 1]
-          break
-        }
-        if v < cp {
-          lo = mid + 1
-        } else {
-          hi = mid - 1
-        }
-      }
+      let pointer = encode_index_lookup(big5_encode_index, cp)
       if pointer < 0 {
         return Err(EncodingError::Unmappable(cp, index))
       }
@@ -249,22 +255,7 @@ fn shift_jis_encode(text : String) -> Result[Bytes, EncodingError] {
       if cp == 0x2212 {
         cp = 0xFF0D // 规范：U+2212 归一到全角减号后再查索引
       }
-      let mut lo = 0
-      let mut hi = shift_jis_encode_index.length() / 2 - 1
-      let mut pointer = -1
-      while lo <= hi {
-        let mid = (lo + hi) / 2
-        let v = shift_jis_encode_index[mid * 2]
-        if v == cp {
-          pointer = shift_jis_encode_index[mid * 2 + 1]
-          break
-        }
-        if v < cp {
-          lo = mid + 1
-        } else {
-          hi = mid - 1
-        }
-      }
+      let pointer = encode_index_lookup(shift_jis_encode_index, cp)
       if pointer < 0 {
         return Err(EncodingError::Unmappable(cp, index))
       }

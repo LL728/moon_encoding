@@ -31,8 +31,19 @@
   单挂起 lead 状态机 + Restore 重放 + end-of-queue 单 U+FFFD，全切分点跨块等价
 - 多字节差分向量：`tools/multibyte_ref.py`（encode-map 规则与表生成器单一来源），
   Big5 193+225、Shift_JIS 269+283 向量，3 处规范/CPython 分歧自动排除
+- **EUC-JP / EUC-KR** 完整编解码：规范 `§euc-jp` / `§euc-kr` 逐条实现——EUC-JP 的
+  SS2（0x8E+半角片假名）/ SS3（0x8F+jis0212，标志在通用分支强制复位）序列、
+  共享 jis0208 指针空间（94 列）、与 Shift_JIS 同款的 ¥/overbar/U+2212 特例、
+  半角片假名两字节编码；EUC-KR 单 lead + 0x41..0xFE 单偏移（无 GBK 的 0x7F/0x80 分界、
+  无任何编码特例）；两者 fresh 字节 0x80/0xA0/0xFF 报错（分别对比 GBK 的 U+20AC、
+  Shift_JIS 的 U+0080）；`supported_encodings()` 达 34 种
+- EUC 表：`gen_euc.mbt`（jis0212 8836、EUC-KR 索引 23940 与 17048 码点反向表、
+  EUC-JP 7326 码点反向表并断言全部指针 < 8836 —— 规范 §euc-jp-encoder 注记）；
+  四个多字节编码的二分查找收敛为共享 `encode_index_lookup`
+- EUC 差分向量：EUC-JP 234+211（**57 处**规范/CPython 表格分歧自动排除，
+  如 a1dd 的 FF0D/2212）、EUC-KR 190+227（0 处真分歧）
 - 文件转码 CLI：`decode` / `encode` 子命令，失败非零退出并打印原因
 - CI：格式检查、`moon check --deny-warn`、构建、wasm-gc 与 js 双后端测试、
   生成物新鲜度、命令行端到端（windows-1252 / iso-8859 / koi8-r /
-  GBK↔gb18030 / gb18030 四字节往返 / Big5 / Shift_JIS + 错误路径）
+  GBK↔gb18030 / gb18030 四字节往返 / Big5 / Shift_JIS / EUC-JP 含 SS3 / EUC-KR + 错误路径）
 - 双许可证：代码 Apache-2.0，WHATWG 数据 BSD-3-Clause（`LICENSE-WHATWG`）

@@ -39,10 +39,11 @@ test "decode: unknown label and valid-but-unimplemented encoding are distinct er
     decode(input, "no-such-label"),
     Err(EncodingError::UnknownLabel("no-such-label")),
   )
-  // GBK/gb18030/Big5/Shift_JIS 已接线；换一个合法但尚未接线的编码验证两类错误可区分
-  match decode(input, "euc-jp") {
+  // GBK/gb18030/Big5/Shift_JIS/EUC-JP/EUC-KR 已接线；换一个合法但尚未接线的编码
+  //（ISO-2022-JP 是四模式转义状态机，属独立里程碑）验证两类错误可区分
+  match decode(input, "iso-2022-jp") {
     Err(EncodingError::UnsupportedEncoding(name)) =>
-      @test.assert_eq(name, "EUC-JP")
+      @test.assert_eq(name, "ISO-2022-JP")
     other =>
       abort("expected UnsupportedEncoding, got " + @debug.to_string(other))
   }

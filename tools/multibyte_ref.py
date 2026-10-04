@@ -170,6 +170,170 @@ def sjis_encode_map(jis):
     return enc
 
 
+def euc_jp_encode_map(jis0208):
+    """encoding.bs EUC-JP encoder: plain index pointer (first occurrence)
+    over index jis0208. The spec notes the pointer is always < 8836 —
+    empirically the 388 non-null entries at >=8836 are all duplicates of
+    lower occurrences, which this assert pins."""
+    enc = {}
+    for ptr, cp in enumerate(jis0208):
+        if cp is not None and cp not in enc:
+            enc[cp] = ptr
+    assert enc and max(enc.values()) < 8836, "spec note violated: pointer >= 8836"
+    return enc
+
+
+def euc_kr_encode_map(euc_kr):
+    """encoding.bs EUC-KR encoder: plain index pointer; the index has no
+    duplicate code points, so first-wins is the identity map."""
+    enc = {}
+    for ptr, cp in enumerate(euc_kr):
+        if cp is not None and cp not in enc:
+            enc[cp] = ptr
+    return enc
+
+
+def ref_euc_jp_decode(data, jis0208, jis0212) -> str:
+    out = []
+    lead = 0
+    j212 = False
+    q = list(data)
+    i = 0
+    while i < len(q):
+        b = q[i]
+        i += 1
+        if lead == 0x8E and 0xA1 <= b <= 0xDF:
+            lead = 0
+            out.append(0xFF61 - 0xA1 + b)
+            continue
+        if lead == 0x8F and 0xA1 <= b <= 0xFE:
+            j212 = True
+            lead = b
+            continue
+        if lead:
+            l, lead = lead, 0
+            cp = None
+            if 0xA1 <= l <= 0xFE and 0xA1 <= b <= 0xFE:
+                ptr = (l - 0xA1) * 94 + (b - 0xA1)
+                tbl = jis0212 if j212 else jis0208
+                if ptr < len(tbl):
+                    cp = tbl[ptr]
+            j212 = False
+            if cp is not None:
+                out.append(cp)
+                continue
+            if b < 0x80:
+                q[i - 1:i] = [b]
+            out.append(0xFFFD)
+            continue
+        if b < 0x80:
+            out.append(b)
+        elif b in (0x8E, 0x8F) or 0xA1 <= b <= 0xFE:
+            lead = b
+        else:
+            out.append(0xFFFD)
+    if lead:
+        out.append(0xFFFD)
+    return "".join(chr(c) for c in out)
+
+
+def ref_euc_jp_encode(text, enc_map):
+    out = bytearray()
+    for ch in text:
+        cp = ord(ch)
+        if cp < 0x80:
+            out.append(cp)
+        elif cp == 0x00A5:
+            out.append(0x5C)
+        elif cp == 0x203E:
+            out.append(0x7E)
+        elif 0xFF61 <= cp <= 0xFF9F:
+            out += bytes([0x8E, cp - 0xFF61 + 0xA1])
+        else:
+            if cp == 0x2212:
+                cp = 0xFF0D
+            ptr = enc_map.get(cp)
+            if ptr is None:
+                return None
+            out += bytes([ptr // 94 + 0xA1, ptr % 94 + 0xA1])
+    return bytes(out)
+
+
+def ref_euc_kr_decode(data, euc_kr) -> str:
+    out = []
+    lead = 0
+    q = list(data)
+    i = 0
+    while i < len(q):
+        b = q[i]
+        i += 1
+        if lead:
+            l, lead = lead, 0
+            cp = None
+            if 0x41 <= b <= 0xFE:
+                ptr = (l - 0x81) * 190 + (b - 0x41)
+                if ptr < len(euc_kr):
+                    cp = euc_kr[ptr]
+            if cp is not None:
+                out.append(cp)
+                continue
+            if b < 0x80:
+                q[i - 1:i] = [b]
+            out.append(0xFFFD)
+            continue
+        if b < 0x80:
+            out.append(b)
+        elif 0x81 <= b <= 0xFE:
+            lead = b
+        else:
+            out.append(0xFFFD)
+    if lead:
+        out.append(0xFFFD)
+    return "".join(chr(c) for c in out)
+
+
+def ref_euc_kr_encode(text, enc_map):
+    out = bytearray()
+    for ch in text:
+        cp = ord(ch)
+        if cp < 0x80:
+            out.append(cp)
+            continue
+        ptr = enc_map.get(cp)
+        if ptr is None:
+            return None
+        out += bytes([ptr // 190 + 0x81, ptr % 190 + 0x41])
+    return bytes(out)
+
+
+def euc_samples(rng, n_random: int):
+    """Samples shaped for the EUC family: KR-style pairs (trail 0x41..0xFE,
+    including ASCII trails that exercise replay), JIS pairs, SS2/SS3
+    prefixes, broken sequences, ASCII runs, raw bytes."""
+    out = [[b] for b in range(256)]
+    jp_pairs = list(range(0xA1, 0xFF))
+    for _ in range(n_random):
+        kind = rng.randrange(7)
+        if kind == 0:
+            out.append([rng.randrange(0x81, 0xFF), rng.randrange(0x41, 0xFF)])
+        elif kind == 1:
+            out.append([rng.choice(jp_pairs), rng.choice(jp_pairs)])
+        elif kind == 2:
+            out.append([0x8E, rng.randrange(0xA1, 0xE0)])
+        elif kind == 3:
+            out.append([0x8F, rng.randrange(0xA1, 0xFF), rng.randrange(0xA1, 0xFF)])
+        elif kind == 4:
+            out.append([
+                rng.choice([0x81, 0x8E, 0x8F]),
+                rng.choice([0x20, 0x41, 0xA0, 0xFF]),
+            ])
+        elif kind == 5:
+            out.append([rng.randrange(0x20, 0x7F) for _ in range(rng.randrange(1, 10))])
+        else:
+            out.append([rng.randrange(256) for _ in range(rng.randrange(1, 8))])
+    return out
+
+
 def multibyte_samples(rng, n_random: int):
     """Generic structured samples for lead/trail encodings (Big5, Shift_JIS,
     later EUC-KR/EUC-JP): singles, plausible pairs, broken pairs, raw runs."""
@@ -201,19 +365,31 @@ def gen_vectors(indexes, rng):
     """Classify samples against CPython; returns per-encoding stats + vectors."""
     big5 = indexes["big5"]
     jis = indexes["jis0208"]
+    jis212 = indexes["jis0212"]
+    euc_kr = indexes["euc-kr"]
     big5_enc = big5_encode_map(big5)
     sjis_enc = sjis_encode_map(jis)
+    euc_jp_enc = euc_jp_encode_map(jis)
+    euc_kr_enc = euc_kr_encode_map(euc_kr)
     results = []
-    for name, codec, ref_dec, ref_enc, enc_map in (
+    for name, codec, ref_dec, ref_enc, enc_map, sample_fn in (
         ("Big5", "big5",
-         lambda d: ref_big5_decode(d, big5), ref_big5_encode, big5_enc),
+         lambda d: ref_big5_decode(d, big5), ref_big5_encode, big5_enc,
+         lambda: multibyte_samples(rng, 170)),
         ("Shift_JIS", "shift_jis",
-         lambda d: ref_sjis_decode(d, jis), ref_sjis_encode, sjis_enc),
+         lambda d: ref_sjis_decode(d, jis), ref_sjis_encode, sjis_enc,
+         lambda: multibyte_samples(rng, 170)),
+        ("EUC-JP", "euc_jp",
+         lambda d: ref_euc_jp_decode(d, jis, jis212), ref_euc_jp_encode,
+         euc_jp_enc, lambda: euc_samples(rng, 170)),
+        ("EUC-KR", "euc_kr",
+         lambda d: ref_euc_kr_decode(d, euc_kr), ref_euc_kr_encode,
+         euc_kr_enc, lambda: euc_samples(rng, 170)),
     ):
         dec_vecs, enc_vecs = [], []
         skipped = divergent = 0
         pool_cps = set(range(0x20, 0x7F))
-        for sample in multibyte_samples(rng, 170):
+        for sample in sample_fn():
             data = bytes(sample)
             try:
                 py_text = data.decode(codec)

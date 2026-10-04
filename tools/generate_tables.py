@@ -50,12 +50,13 @@ SINGLE_BYTE_GROUP = "Legacy single-byte encodings"
 CHINESE_GROUP = "Legacy multi-byte Chinese (simplified) encodings"
 TRADITIONAL_GROUP = "Legacy multi-byte Chinese (traditional) encodings"
 JAPANESE_GROUP = "Legacy multi-byte Japanese encodings"
+KOREAN_GROUP = "Legacy multi-byte Korean encodings"
 
 # Encodings wired end-to-end in the multi-byte milestones. Each entry must be
 # a member of one of the groups above (asserted at generation time); tables
 # are only emitted for wired names, so unsupported encodings never leave
 # unused tables behind (deny-warn would flag them).
-MULTI_BYTE_WIRED = ["GBK", "gb18030", "Big5", "Shift_JIS"]
+MULTI_BYTE_WIRED = ["GBK", "gb18030", "Big5", "Shift_JIS", "EUC-JP", "EUC-KR"]
 
 # Encoding name -> indexes.json key, where they differ. ISO-8859-8-I shares
 # the ISO-8859-8 index (it is the logical-order label variant; the standard
@@ -98,6 +99,8 @@ def gen_chinese(encodings, indexes) -> str:
         "gb18030": CHINESE_GROUP,
         "Big5": TRADITIONAL_GROUP,
         "Shift_JIS": JAPANESE_GROUP,
+        "EUC-JP": JAPANESE_GROUP,
+        "EUC-KR": KOREAN_GROUP,
     }
     by_group = {h["heading"]: [e["name"] for e in h["encodings"]] for h in encodings}
     for name in MULTI_BYTE_WIRED:
@@ -105,6 +108,8 @@ def gen_chinese(encodings, indexes) -> str:
             sys.exit(f"{name}: not a member of group {group_of[name]!r}")
     if by_group.get(TRADITIONAL_GROUP) != ["Big5"]:
         sys.exit(f"unexpected traditional group: {by_group.get(TRADITIONAL_GROUP)}")
+    if by_group.get(KOREAN_GROUP) != ["EUC-KR"]:
+        sys.exit(f"unexpected Korean group: {by_group.get(KOREAN_GROUP)}")
     encs = [{"name": n} for n in MULTI_BYTE_WIRED]
     index = indexes["gb18030"]
     if len(index) != 23940:  # 126 lead bytes (0x81..0xFE) x 190 trail pointers
@@ -371,6 +376,72 @@ def gen_big5_sjis(indexes) -> str:
     return "\n".join(parts)
 
 
+def gen_euc(indexes) -> str:
+    """Tables for EUC-JP and EUC-KR (encoding.bs §euc-jp / §euc-kr).
+
+    EUC-JP decode reads the SHARED jis0208 table (already emitted in
+    gen_big5_sjis.mbt — one pointer space,188 slots/lead for Shift_JIS vs
+    94 columns here) plus jis0212 for SS3 sequences; its encoder reverse
+    is a plain first-wins map whose maximum pointer is asserted < 8836
+    per the spec's own note. EUC-KR uses its 23940-entry index with no
+    duplicate code points, so its encoder map is the identity.
+    """
+    jis212 = indexes["jis0212"]
+    euc_kr = indexes["euc-kr"]
+    if len(jis212) != 8836:
+        sys.exit(f"jis0212 index: expected 8836 entries, got {len(jis212)}")
+    if len(euc_kr) != 23940:
+        sys.exit(f"euc-kr index: expected 23940 entries, got {len(euc_kr)}")
+
+    euc_jp_enc = multibyte_ref.euc_jp_encode_map(indexes["jis0208"])  # asserts < 8836
+    euc_kr_enc = multibyte_ref.euc_kr_encode_map(euc_kr)
+
+    parts = [HEADER]
+    print(
+        f"gen_euc: jis0212={len(jis212)} ({sum(1 for x in jis212 if x is None)} null), "
+        f"euc_jp encode={len(euc_jp_enc)} cps (max ptr {max(euc_jp_enc.values())}), "
+        f"euc_kr={len(euc_kr)} ({sum(1 for x in euc_kr if x is None)} null), "
+        f"euc_kr encode={len(euc_kr_enc)} cps"
+    )
+
+    def emit(name, var, values, per_line=12):
+        parts.append(f"// {name}")
+        parts.append("")
+        parts.append("///|")
+        parts.append(f"let {var} : Array[Int] =")
+        parts.append(fmt_array(values, per_line=per_line))
+        parts.append("")
+
+    emit(
+        "index jis0212 (EUC-JP SS3 / 0x8F sequences): (lead-0xA1)*94 + trail-0xA1 "
+        "-> code point; -1 = error",
+        "jis0212_index",
+        ["0x%04X" % cp if cp is not None else "-1" for cp in jis212],
+    )
+    emit(
+        "index EUC-KR: pointer (lead-0x81)*190 + trail-0x41 -> code point; -1 = error",
+        "euc_kr_index",
+        ["0x%04X" % cp if cp is not None else "-1" for cp in euc_kr],
+    )
+    emit(
+        "index EUC-KR encoder reverse: (code point, pointer); no duplicate code "
+        "points in the index",
+        "euc_kr_encode_index",
+        flatten_pairs(euc_kr_enc),
+        per_line=8,
+    )
+    emit(
+        "index jis0208 encoder reverse for EUC-JP: (code point, pointer), first "
+        "occurrence; all pointers < 8836 per the spec's note (asserted at "
+        "generation time). Differs from the Shift_JIS map, which excludes "
+        "pointers 8272..8835",
+        "euc_jp_encode_index",
+        flatten_pairs(euc_jp_enc),
+        per_line=8,
+    )
+    return "\n".join(parts)
+
+
 def main():
     encodings, indexes = load_sources()
     (ROOT / "gen_label.mbt").write_text(gen_labels(encodings), encoding="utf-8", newline="\n")
@@ -383,8 +454,12 @@ def main():
     (ROOT / "gen_big5_sjis.mbt").write_text(
         gen_big5_sjis(indexes), encoding="utf-8", newline="\n"
     )
+    (ROOT / "gen_euc.mbt").write_text(
+        gen_euc(indexes), encoding="utf-8", newline="\n"
+    )
     print(
-        "wrote gen_label.mbt, gen_single_byte.mbt, gen_chinese.mbt, gen_big5_sjis.mbt"
+        "wrote gen_label.mbt, gen_single_byte.mbt, gen_chinese.mbt, "
+        "gen_big5_sjis.mbt, gen_euc.mbt"
     )
 
 

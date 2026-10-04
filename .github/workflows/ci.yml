@@ -149,3 +149,25 @@ jobs:
           moon run cmd/main --target wasm-gc -- encode shift_jis \
             "$RUNNER_TEMP/sjis_misc.txt" "$RUNNER_TEMP/sjis_misc2.bin"
           cmp "$RUNNER_TEMP/sjis_misc.bin" "$RUNNER_TEMP/sjis_misc2.bin"
+
+          # EUC-JP 端到端（F5 接线）：日本語，含 SS3 三字节序列
+          printf '\xc6\xfc\xcb\xdc\xb8\xec' > "$RUNNER_TEMP/ja_euc.bin"
+          moon run cmd/main --target wasm-gc -- decode euc-jp \
+            "$RUNNER_TEMP/ja_euc.bin" "$RUNNER_TEMP/ja_euc.txt"
+          python3 -c 'import sys; exp = "".join(chr(c).encode("utf-8").hex() for c in (0x65E5, 0x672C, 0x8A9E)); b = open(sys.argv[1], "rb").read(); assert b.hex() == exp, b.hex()' "$RUNNER_TEMP/ja_euc.txt"
+          moon run cmd/main --target wasm-gc -- encode euc-jp \
+            "$RUNNER_TEMP/ja_euc.txt" "$RUNNER_TEMP/ja_euc2.bin"
+          cmp "$RUNNER_TEMP/ja_euc.bin" "$RUNNER_TEMP/ja_euc2.bin"
+          printf '\x8f\xa2\xaf' > "$RUNNER_TEMP/ss3.bin"
+          moon run cmd/main --target wasm-gc -- decode euc-jp \
+            "$RUNNER_TEMP/ss3.bin" "$RUNNER_TEMP/ss3.txt"
+          python3 -c 'import sys; b = open(sys.argv[1], "rb").read(); assert b.hex() == "cb98", b.hex()' "$RUNNER_TEMP/ss3.txt"
+
+          # EUC-KR 端到端：韩国어（期望 UTF-8 由 CPython 现算，避免手写 hex）
+          printf '\xc7\xd1\xb1\xb9\xbe\xee' > "$RUNNER_TEMP/ko.bin"
+          moon run cmd/main --target wasm-gc -- decode euc-kr \
+            "$RUNNER_TEMP/ko.bin" "$RUNNER_TEMP/ko.txt"
+          python3 -c 'import sys; exp = "".join(chr(c).encode("utf-8").hex() for c in (0xD55C, 0xAD6D, 0xC5B4)); b = open(sys.argv[1], "rb").read(); assert b.hex() == exp, b.hex()' "$RUNNER_TEMP/ko.txt"
+          moon run cmd/main --target wasm-gc -- encode euc-kr \
+            "$RUNNER_TEMP/ko.txt" "$RUNNER_TEMP/ko2.bin"
+          cmp "$RUNNER_TEMP/ko.bin" "$RUNNER_TEMP/ko2.bin"
