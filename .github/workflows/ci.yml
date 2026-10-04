@@ -199,3 +199,9 @@ jobs:
             echo "expected failure: spec defines no UTF-16 encoder"; exit 1
           fi
           grep -q 'UnsupportedEncoding("UTF-16LE")' "$RUNNER_TEMP/e.txt"
+
+          # list：37 种编码清单（F7a）
+          moon run cmd/main --target wasm-gc -- list > "$RUNNER_TEMP/list.txt"
+          grep -q "支持 37 种编码" "$RUNNER_TEMP/list.txt"
+          grep -q "Shift_JIS" "$RUNNER_TEMP/list.txt"
+          grep -q "UTF-16LE" "$RUNNER_TEMP/list.txt"

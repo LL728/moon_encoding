@@ -53,7 +53,12 @@
   UnsupportedEncoding，由单测与 CI 端到端共同钉住
 - UTF 差分向量：`tools/utf_ref.py`——UTF-8 203+139（0 分歧）、UTF-16BE 87、
   UTF-16LE 80 解码向量（各三百余次 CPython strict 报错跳过：孤立代理/奇数长度/非法序列）
-- 文件转码 CLI：`decode` / `encode` 子命令，失败非零退出并打印原因
+- 文件转码 CLI：`decode` / `encode` / `list` 子命令，失败非零退出并打印原因；
+  `list` 输出 `supported_encodings()` 的 37 个规范名（CI 断言行数与关键项）
+- 演示：`tools/make_demo.py` 把**真实执行**的命令流程渲染为
+  `docs/demo.gif`（136 帧 / 10.5 秒，内置自检：期望不符即失败），
+  并同步生成文字实录 `docs/demo_transcript.txt`（完整输出 + 退出码、路径脱敏、
+  无时间戳可复现）；README 新增「演示」一节
 - CI：格式检查、`moon check --deny-warn`、构建、wasm-gc 与 js 双后端测试、
   生成物新鲜度、命令行端到端（windows-1252 / iso-8859 / koi8-r /
   GBK↔gb18030 / gb18030 四字节往返 / Big5 / Shift_JIS / EUC-JP 含 SS3 / EUC-KR / UTF-8 往返 / UTF-16 解码 + 编码器拒绝 + 错误路径）

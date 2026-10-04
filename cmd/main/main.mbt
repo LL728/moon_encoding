@@ -25,14 +25,33 @@ fn usage() -> Unit {
   println("  encode <label> <input> <output>")
   println("      输入是 UTF-8 文本，输出是 <label> 编码的字节")
   println("")
+  println("  list")
+  println("      列出本构建支持的全部编码（WHATWG 规范名）")
+  println("")
   println("示例:")
   println("  moon run cmd/main -- decode windows-1252 legacy.txt utf8.txt")
   println("  moon run cmd/main -- encode latin1 utf8.txt legacy.txt")
+  println("  moon run cmd/main -- list")
+}
+
+///|
+/// list：打印 supported_encodings() 的规范名（顺序即接线顺序：单字节 28 种
+/// 在前、多字节与 UTF 9 种在后）。
+fn list_encodings() -> Unit {
+  let names = @moon_encoding.supported_encodings()
+  println("支持 \{names.length()} 种编码（WHATWG 规范名）:")
+  for name in names {
+    println("  \{name}")
+  }
 }
 
 ///|
 fn main {
   let args = @env.args()
+  if args.length() == 2 && args[1] == "list" {
+    list_encodings()
+    return
+  }
   if args.length() != 5 {
     usage()
     die("需要 4 个参数: <mode> <label> <input> <output>")

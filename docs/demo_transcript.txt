@@ -1,0 +1,131 @@
+# moon_encoding 演示实录（与 docs/demo.gif 由同一脚本生成）
+# 全部输出来自真实命令的真实 stdout/stderr，退出码如实记录；
+# 本机用户路径已脱敏；不含时间戳，可复现。生成方式：
+#     python tools/make_demo.py
+
+$ moon run cmd/main -- list
+支持 37 种编码（WHATWG 规范名）:
+  IBM866
+  ISO-8859-2
+  ISO-8859-3
+  ISO-8859-4
+  ISO-8859-5
+  ISO-8859-6
+  ISO-8859-7
+  ISO-8859-8
+  ISO-8859-8-I
+  ISO-8859-10
+  ISO-8859-13
+  ISO-8859-14
+  ISO-8859-15
+  ISO-8859-16
+  KOI8-R
+  KOI8-U
+  macintosh
+  windows-874
+  windows-1250
+  windows-1251
+  windows-1252
+  windows-1253
+  windows-1254
+  windows-1255
+  windows-1256
+  windows-1257
+  windows-1258
+  x-mac-cyrillic
+  GBK
+  gb18030
+  Big5
+  Shift_JIS
+  EUC-JP
+  EUC-KR
+  UTF-8
+  UTF-16BE
+  UTF-16LE
+[exit 0]
+
+$ printf '\xd6\xd0\xce\xc4' > _build/d/cn.bin
+[exit 0]
+
+$ printf '\xa7\x41\xa6\x6e' > _build/d/hant.bin
+[exit 0]
+
+$ printf '\x93\xfa\x96\x7b\x8c\xea' > _build/d/ja_sjis.bin
+[exit 0]
+
+$ printf '\xc6\xfc\xcb\xdc\xb8\xec' > _build/d/ja_euc.bin
+[exit 0]
+
+$ printf '\xc7\xd1\xb1\xb9\xbe\xee' > _build/d/ko.bin
+[exit 0]
+
+$ printf '\xff\xfe\x41\x00\x3d\xd8\x00\xde' > _build/d/u16.bin
+[exit 0]
+
+$ printf '\xe4\xb8\xad\xe6\x96\x87' > _build/d/zh.txt
+[exit 0]
+
+$ moon run cmd/main -- decode gbk _build/d/cn.bin _build/d/cn.txt
+已写入: _build/d/cn.txt（2 字符，UTF-8）
+[exit 0]
+
+$ xxd -p _build/d/cn.txt
+e4b8ade69687
+[exit 0]
+
+$ moon run cmd/main -- encode gb18030 _build/d/cn.txt _build/d/cn2.bin
+已写入: _build/d/cn2.bin（4 字节，gb18030）
+[exit 0]
+
+$ cmp _build/d/cn.bin _build/d/cn2.bin && echo 'OK: byte-identical'
+OK: byte-identical
+[exit 0]
+
+$ moon run cmd/main -- decode big5 _build/d/hant.bin _build/d/hant.txt
+已写入: _build/d/hant.txt（2 字符，UTF-8）
+[exit 0]
+
+$ moon run cmd/main -- decode shift_jis _build/d/ja_sjis.bin _build/d/ja1.txt
+已写入: _build/d/ja1.txt（3 字符，UTF-8）
+[exit 0]
+
+$ moon run cmd/main -- decode euc-jp _build/d/ja_euc.bin _build/d/ja2.txt
+已写入: _build/d/ja2.txt（3 字符，UTF-8）
+[exit 0]
+
+$ moon run cmd/main -- decode euc-kr _build/d/ko.bin _build/d/ko.txt
+已写入: _build/d/ko.txt（3 字符，UTF-8）
+[exit 0]
+
+$ moon run cmd/main -- decode utf-16le _build/d/u16.bin _build/d/u16.txt
+已写入: _build/d/u16.txt（4 字符，UTF-8）
+[exit 0]
+
+$ xxd -p _build/d/u16.txt
+efbbbf41f09f9880
+[exit 0]
+
+$ moon run cmd/main -- decode no-such-label _build/d/cn.bin _build/d/x.txt
+解码失败: UnknownLabel("no-such-label")
+(stderr) RuntimeError: unreachable
+[exit 1]
+
+$ moon run cmd/main -- decode iso-2022-jp _build/d/cn.bin _build/d/x.txt
+解码失败: UnsupportedEncoding("ISO-2022-JP")
+(stderr) RuntimeError: unreachable
+[exit 1]
+
+$ moon run cmd/main -- encode windows-1252 _build/d/zh.txt _build/d/zh.bin
+编码失败: Unmappable(20013, 0)
+(stderr) RuntimeError: unreachable
+[exit 1]
+
+$ moon run cmd/main -- encode utf-16le _build/d/cn.txt _build/d/x.bin
+编码失败: UnsupportedEncoding("UTF-16LE")
+(stderr) RuntimeError: unreachable
+[exit 1]
+
+$ moon test
+Total tests: 147, passed: 147, failed: 0.
+[exit 0]
+

@@ -19,10 +19,9 @@ WHATWG Encoding Standard 共定义 40 种编码、228 个 label。
 | 中文 | `GBK`（含 `gb2312` / `chinese` 等别名）、`gb18030`（含 4 字节） | ✅ 已实现 |
 | 日文 | `Shift_JIS` | ✅ 已实现 |
 | 日文 / 韩文 | `EUC-JP`（含 SS2/SS3）、`EUC-KR` | ✅ 已实现 |
-| 日文 | `ISO-2022-JP`（四模式转义状态机） | ⏳ 计划中 |
-| Unicode | `UTF-8`、`UTF-16BE`、`UTF-16LE`（仅解码，见下） | ✅ 已实现 |
 | 中文（繁体） | `Big5` | ✅ 已实现 |
-| 其他 | `ISO-2022-JP`、`replacement`、`x-user-defined` | ⏳ 视进度 |
+| Unicode | `UTF-8`、`UTF-16BE`、`UTF-16LE`（仅解码，见下） | ✅ 已实现 |
+| 其他 | `ISO-2022-JP`、`replacement`、`x-user-defined` | ⏸ 可裁剪，不在当前范围 |
 
 尚未实现的编码会返回明确的 `UnsupportedEncoding` 错误（而不是静默失败），
 未知 label 返回 `UnknownLabel`——两者可区分。
@@ -92,22 +91,41 @@ pub enum EncodingError {
 moon run cmd/main -- decode <label> <input> <output>
 # UTF-8 文本 -> 目标编码字节
 moon run cmd/main -- encode <label> <input> <output>
+# 列出本构建支持的全部编码（WHATWG 规范名）
+moon run cmd/main -- list
 
 # 示例
 moon run cmd/main -- decode windows-1252 legacy.txt utf8.txt
 moon run cmd/main -- encode latin1 utf8.txt legacy.txt
+moon run cmd/main -- list
 ```
 
 失败一律以非零退出码结束并打印原因，便于脚本使用：
 
 ```text
-$ moon run cmd/main -- decode gbk in.bin out.txt
-解码失败: UnsupportedEncoding("GBK")
+$ moon run cmd/main -- decode iso-2022-jp in.bin out.txt
+解码失败: UnsupportedEncoding("ISO-2022-JP")
 $ echo $?
 1
 ```
 
+## 演示
+
+![moon_encoding 演示](docs/demo.gif)
+
+演示覆盖：编码清单（37 种）、GBK/gb18030 往返、Big5/Shift_JIS/EUC-JP/EUC-KR/
+UTF-16 解码、四类错误路径（未知 label、未实现编码、不可映射字符、规范未定义的
+UTF-16 编码器）与全量测试收尾。
+
+- 同步生成的文字实录：[docs/demo_transcript.txt](docs/demo_transcript.txt)
+  （含每条命令的完整输出与退出码，作为 GIF 内容未被加工的凭据）
+- 重新生成：`python tools/make_demo.py`——每帧文字都来自真实执行的命令，
+  脚本内置自检，输出与期望不符即失败；行为变化后应重新生成，避免演示与实现脱节
+
 ## 验证方式
+
+`moon test` **147 项**，在 wasm-gc 与 js 两个后端上全绿；CI 每次提交都跑格式检查、
+`moon check --deny-warn`、构建、双后端测试、生成物新鲜度与命令行端到端。
 
 - **单元与属性测试**：label 解析、28 张表的结构不变量（128 项解码表、合法非代理码点、
   编码表严格升序唯一）、规范已知映射、windows-1252 的 256 字节全量双向往返、
@@ -129,15 +147,12 @@ $ echo $?
   以及 UTF-16 编码按规范返回 UnsupportedEncoding。
 - **Python 差分测试**：以 CPython 各编码的 codec 为独立预言机，
   **8500+ 黄金向量**由 `tools/gen_vectors.py` 生成并提交进仓库，覆盖 28 种单字节编码、
-  GBK/gb18030、Big5/Shift_JIS、EUC-JP/EUC-KR 与 UTF 三件套（多字节部分经
-  `tools/chinese_ref.py` / `tools/multibyte_ref.py` / `tools/utf_ref.py` 的规范参考实现
-  逐样本与 CPython 交叉分类——两边都同意才进向量，已知的规范/CPython 分歧自动排除并
-  逐编码计数，其中 EUC-JP 达 57 处（JIS 表格的 FF0D/2212 类差异），UTF-16 两方向各有
-  三百余次 CPython strict 报错跳过；UTF-16 只有解码向量，因为规范不定义其编码器）。
-  生成器逐字节分类 CPython 与 WHATWG 的关系：`clean`（同值，可用作预言机）进向量，
-  `both-error`（两边都报错）由 U+FFFD 单测覆盖，`divergent`（有分歧）排除并逐种记录
-  （windows-1252 的 `0x81/0x8D/0x8F/0x90/0x9D`——CPython 报错、WHATWG 映射 C1 控制符——
-  是最知名的例子，但分类是按编码逐种自动计算的，不写死）。
+  GBK/gb18030、Big5/Shift_JIS、EUC-JP/EUC-KR 与 UTF 三件套。分类按编码**逐样本自动
+  计算**（规范参考实现在 `tools/chinese_ref.py` / `multibyte_ref.py` / `utf_ref.py`，
+  与表生成器同源）：两边同值才进向量，两边都报错由 U+FFFD 单测覆盖，有分歧则排除并
+  逐编码计数——windows-1252 的 `0x81/8D/8F/90/9D`（CPython 报错、WHATWG 映射 C1）、
+  EUC-JP 的 57 处 JIS 表格差异、UTF-16 各三百余次 strict 跳过都在其中；
+  分歧清单不写死，UTF-16 只有解码向量（规范不定义其编码器）。
 - **新鲜度检查**：CI 重新生成全部表与向量后 `git diff --exit-code`，
   保证提交内容永远等于生成器产物。
 
@@ -175,10 +190,10 @@ moon fmt && moon check --deny-warn && moon test
 - 未实现 BOM 嗅探与 `decode()` 的自动 BOM 覆写；label 由调用方显式给出。
   因此 UTF-16 输入里的 BOM 会作为 U+FEFF 字符解出（与 CPython 的
   `utf-16-be` / `utf-16-le` 行为一致）。
-- 未实现 BOM 嗅探与 `decode()` 的自动 BOM 覆写；label 由调用方显式给出。
 - 编码侧只提供 fatal 模式原语；规范中 HTML 表单用的 `&#码点;` 替换模式（html 模式）
   尚未提供。
-- 单字节编码不含跨块状态，流式 API 已就位；多字节编码的跨块状态机随对应里程碑加入。
+- 单字节编码无跨块状态；多字节编码（GBK/Big5/Shift_JIS/EUC/UTF-16）的挂起状态
+  保存在解码器内跨块续传，任意切分等价由"每个切分点 + 随机切分"测试覆盖。
 
 ## 参考与许可
 
@@ -189,4 +204,5 @@ moon fmt && moon check --deny-warn && moon test
 - 表生成流程参考 [encoding_rs](https://github.com/hsivonen/encoding_rs) 的
   `generate-encoding-data.py`（同为 `(Apache-2.0 OR MIT)`，本项目未移植其代码，
   仅沿用其钉定的 whatwg/encoding 版本以保证数据同源）。
-- 差分预言机：CPython 标准库 `codecs` 的 `cp1252`（PSF 许可）。
+- 差分预言机：CPython 标准库 `codecs` 的各编码实现（`cp1252`、`gbk`、`big5`、
+  `shift_jis`、`euc_jp`、`euc_kr`、`utf-8`、`utf-16-le` 等，PSF 许可）。
