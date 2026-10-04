@@ -21,6 +21,13 @@ pub enum EncodingError {
 } derive(Eq, @debug.Debug)
 
 ///|
+/// 显式声明 trait 方法提升（新编译器弃用隐式提升，见 implicit_impl_as_method）。
+pub extend EncodingError with Eq::{not_equal, equal}
+
+///|
+pub extend EncodingError with @moonbitlang/core/debug.Debug::{to_repr}
+
+///|
 /// 解码器内部状态：单字节表驱动，或中文多字节状态机（GBK/gb18030 共用——
 /// 规范规定 GBK 的解码器就是 gb18030 的解码器）。
 enum DecoderState {
