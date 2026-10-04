@@ -107,3 +107,122 @@ test "windows-1252: encode->decode round-trips every encodable code point" {
     }
   }
 }
+
+// ---------------------------------------------------------------------------
+// F2：全部 28 种单字节编码的公共不变量（编码集由生成器自动发现）。
+
+///|
+test "all single-byte encodings: dispatch resolves every generated name" {
+  @test.assert_eq(single_byte_names.length(), 28)
+  for k in 0..<single_byte_names.length() {
+    let name = single_byte_names[k]
+    match single_byte_tables(name) {
+      Some((decode_table, encode_table)) => {
+        // 解码表 128 项；每项是合法非代理码点或 -1（规范 index null）
+        @test.assert_eq(decode_table.length(), 128)
+        for i in 0..<128 {
+          let cp = decode_table[i]
+          @test.assert_eq(
+            cp == -1 ||
+            (cp >= 0 && cp <= 0x10FFFF && (cp < 0xD800 || cp > 0xDFFF)),
+            true,
+          )
+        }
+        // 编码表：成对、码点严格升序（保证二分唯一命中）、字节只含高位区
+        @test.assert_eq(encode_table.length() % 2, 0)
+        let mut prev = -1
+        for i in 0..<(encode_table.length() / 2) {
+          let cp = encode_table[i * 2]
+          let byte = encode_table[i * 2 + 1]
+          @test.assert_eq(cp > prev, true)
+          @test.assert_eq(byte >= 0x80 && byte <= 0xFF, true)
+          prev = cp
+        }
+      }
+      None => abort("dispatch missing for " + name)
+    }
+  }
+}
+
+///|
+test "all single-byte encodings: rev_lookup agrees with every encode-table entry" {
+  for k in 0..<single_byte_names.length() {
+    let name = single_byte_names[k]
+    match single_byte_tables(name) {
+      Some((_, encode_table)) =>
+        for i in 0..<(encode_table.length() / 2) {
+          @test.assert_eq(
+            rev_lookup(encode_table, encode_table[i * 2]),
+            encode_table[i * 2 + 1],
+          )
+        }
+      None => abort("dispatch missing for " + name)
+    }
+  }
+}
+
+///|
+test "all single-byte encodings: decode-error bytes output U+FFFD (replacement)" {
+  // 28 张表共 150 个 index null 位（ISO-8859-8/-8-I 共用同一索引各计一次），
+  // 这些位置是 replacement 语义的真实覆盖。
+  let replacement_cp : Int = 0xFFFD
+  let replacement = String::from_iter([replacement_cp.unsafe_to_char()].iter())
+  let mut error_bytes = 0
+  for k in 0..<single_byte_names.length() {
+    let name = single_byte_names[k]
+    match single_byte_tables(name) {
+      Some((decode_table, _)) =>
+        for i in 0..<128 {
+          if decode_table[i] == -1 {
+            error_bytes += 1
+            @test.assert_eq(
+              decode(bytes_of_ints([i + 0x80]), name),
+              Ok(replacement),
+            )
+          }
+        }
+      None => abort("dispatch missing for " + name)
+    }
+  }
+  @test.assert_eq(error_bytes, 150)
+}
+
+///|
+test "all single-byte encodings: round-trips for every table entry" {
+  for k in 0..<single_byte_names.length() {
+    let name = single_byte_names[k]
+    match single_byte_tables(name) {
+      Some((decode_table, encode_table)) => {
+        // 解码表每个非错误字节 -> 文本 -> 编码必须还原同一字节
+        //（生成器断言过码点无重复，因此反向表命中唯一）
+        for i in 0..<128 {
+          if decode_table[i] != -1 {
+            let byte = i + 0x80
+            let text = single_byte_decode(decode_table, bytes_of_ints([byte]))
+            match single_byte_encode(encode_table, text) {
+              Ok(out) => {
+                @test.assert_eq(out.length(), 1)
+                @test.assert_eq(out[0].to_int(), byte)
+              }
+              Err(e) =>
+                abort(
+                  name + " round-trip encode failed: " + @debug.to_string(e),
+                )
+            }
+          }
+        }
+        // 编码表每个码点 -> 字节 -> 解码必须还原同一码点
+        for i in 0..<(encode_table.length() / 2) {
+          let cp = encode_table[i * 2]
+          let text = String::from_iter([cp.unsafe_to_char()].iter())
+          match single_byte_encode(encode_table, text) {
+            Ok(out) =>
+              @test.assert_eq(single_byte_decode(decode_table, out), text)
+            Err(e) => abort(name + " encode failed: " + @debug.to_string(e))
+          }
+        }
+      }
+      None => abort("dispatch missing for " + name)
+    }
+  }
+}

@@ -1,6 +1,8 @@
 // single_byte.mbt
 //
-// 28 种 legacy 单字节编码共用的表驱动引擎（F1 先接 windows-1252）。
+// 28 种 legacy 单字节编码共用的表驱动引擎；具体表与 dispatch 见生成的
+// gen_single_byte.mbt（编码集与数据由 tools/generate_tables.py 从
+// WHATWG encodings.json 的 single-byte 分组自动发现）。
 // 解码表：下标 = 字节 - 0x80，表值 = 码点，-1 表规范 index null（解码错误）。
 // 编码表：(码点, 字节) 按码点升序的扁平对，供二分查找。
 

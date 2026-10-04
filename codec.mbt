@@ -34,12 +34,12 @@ pub fn Decoder::new(label : String) -> Result[Decoder, EncodingError] {
   match label_to_encoding(label) {
     Err(e) => Err(e)
     Ok(encoding) =>
-      match encoding {
-        "windows-1252" => {
-          let decoder : Decoder = { decode_table: windows_1252_decode, }
+      match single_byte_tables(encoding) {
+        Some((decode_table, _)) => {
+          let decoder : Decoder = { decode_table, }
           Ok(decoder)
         }
-        _ => Err(EncodingError::UnsupportedEncoding(encoding))
+        None => Err(EncodingError::UnsupportedEncoding(encoding))
       }
   }
 }
@@ -56,6 +56,17 @@ pub fn Decoder::consume(self : Decoder, chunk : Bytes) -> String {
 /// 多字节编码（后续里程碑）会在这里把截断的字节序列补成 U+FFFD。
 pub fn Decoder::finish(_self : Decoder) -> String {
   ""
+}
+
+///|
+/// 本构建已接线的单字节编码（WHATWG 规范名）——label 解析覆盖全部 40 种编码，
+/// 其中这些可实际编解码；返回新数组，改它不影响内部状态。
+pub fn supported_encodings() -> Array[String] {
+  let out : Array[String] = []
+  for name in single_byte_names {
+    out.push(name)
+  }
+  out
 }
 
 ///|
@@ -82,9 +93,9 @@ pub fn encode(text : String, label : String) -> Result[Bytes, EncodingError] {
   match label_to_encoding(label) {
     Err(e) => Err(e)
     Ok(encoding) =>
-      match encoding {
-        "windows-1252" => single_byte_encode(windows_1252_encode, text)
-        _ => Err(EncodingError::UnsupportedEncoding(encoding))
+      match single_byte_tables(encoding) {
+        Some((_, encode_table)) => single_byte_encode(encode_table, text)
+        None => Err(EncodingError::UnsupportedEncoding(encoding))
       }
   }
 }

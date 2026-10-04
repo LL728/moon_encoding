@@ -15,8 +15,7 @@ WHATWG Encoding Standard 共定义 40 种编码、228 个 label。
 
 | 分组 | 编码 | 状态 |
 | --- | --- | --- |
-| 单字节（28 种） | `windows-1252`（含 `latin1` / `ascii` / `iso-8859-1` 等别名） | ✅ 已实现 |
-| | 其余 27 种（`ISO-8859-2..16`、`windows-1250..1258`、`KOI8-R/U`、`IBM866`、`macintosh` 等） | ⏳ 计划中 |
+| 单字节（28 种） | `windows-1252`（含 `latin1` / `ascii` 等别名）、`ISO-8859-2/3/4/5/6/7/8/8-I/10/13/14/15/16`、`windows-874/1250..1258`、`KOI8-R/U`、`IBM866`、`macintosh`、`x-mac-cyrillic` | ✅ 已实现 |
 | 中文 | `GBK` / `gb18030`、`Big5` | ⏳ 计划中 |
 | 日韩 | `Shift_JIS`、`EUC-JP`、`EUC-KR` | ⏳ 计划中 |
 | Unicode | `UTF-8`、`UTF-16BE`、`UTF-16LE` | ⏳ 计划中 |
@@ -107,19 +106,22 @@ $ echo $?
 
 ## 验证方式
 
-- **单元与属性测试**：label 解析、表不变量、规范已知映射、256 字节全量双向往返、
-  1200 组随机切分的流式等价性。
-- **Python 差分测试**：以 CPython 的 `cp1252` 编解码为独立预言机，
-  378 个黄金向量（318 解码 + 60 编码）由 `tools/gen_vectors.py` 生成并提交进仓库。
-  CPython 与 WHATWG 在 5 个字节（`0x81` `0x8D` `0x8F` `0x90` `0x9D`）上存在
-  设计性差异——前者报错、后者映射为 C1 控制符——生成器在生成时会验证这一差异，
-  这 5 个字节改由对照 vendored 规范表的单元测试覆盖。
+- **单元与属性测试**：label 解析、28 张表的结构不变量（128 项解码表、合法非代理码点、
+  编码表严格升序唯一）、规范已知映射、windows-1252 的 256 字节全量双向往返、
+  全部表项的逐项往返、28 张表共 150 个解码错误位经公共 API 输出 U+FFFD 的
+  replacement 接线、1200 组随机切分的流式等价性。
+- **Python 差分测试**：以 CPython 各编码的 codec 为独立预言机，
+  **5300+ 黄金向量**由 `tools/gen_vectors.py` 生成并提交进仓库，覆盖全部 28 种单字节编码。
+  生成器逐字节分类 CPython 与 WHATWG 的关系：`clean`（同值，可用作预言机）进向量，
+  `both-error`（两边都报错）由 U+FFFD 单测覆盖，`divergent`（有分歧）排除并逐种记录
+  （windows-1252 的 `0x81/0x8D/0x8F/0x90/0x9D`——CPython 报错、WHATWG 映射 C1 控制符——
+  是最知名的例子，但分类是按编码逐种自动计算的，不写死）。
 - **新鲜度检查**：CI 重新生成全部表与向量后 `git diff --exit-code`，
   保证提交内容永远等于生成器产物。
 
 ```bash
-python tools/generate_tables.py   # 由 vendored 规范数据生成 label/编码表
-python tools/gen_vectors.py       # 由 CPython cp1252 生成差分向量
+python tools/generate_tables.py   # 由 vendored 规范数据生成 label/编码表/dispatch
+python tools/gen_vectors.py       # 由 CPython codecs 生成差分向量
 moon fmt && moon check --deny-warn && moon test
 ```
 
@@ -137,7 +139,8 @@ moon fmt && moon check --deny-warn && moon test
 
 ## 已知限制
 
-- 仅 `windows-1252` 可编解码（见覆盖状态表）；其余编码当前返回 `UnsupportedEncoding`。
+- 已实现范围为 28 种 legacy 单字节编码（`supported_encodings()` 可查询）；
+  `GBK` / `Big5` / `Shift_JIS` / UTF 系等尚未接线，返回 `UnsupportedEncoding`。
 - 未实现 BOM 嗅探与 `decode()` 的自动 BOM 覆写；label 由调用方显式给出。
 - 编码侧只提供 fatal 模式原语；规范中 HTML 表单用的 `&#码点;` 替换模式（html 模式）
   尚未提供。
