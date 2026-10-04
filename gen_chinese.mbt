@@ -4,10 +4,10 @@
 // Data © WHATWG (Apple, Google, Mozilla, Microsoft); BSD 3-Clause License
 // (see LICENSE-WHATWG in this repository).
 
-// GBK / gb18030 encoding names (GBK decodes exactly as gb18030).
+// Multi-byte encodings wired in this build (see MULTI_BYTE_WIRED).
 
 ///|
-let multi_byte_names : Array[String] = ["GBK", "gb18030"]
+let multi_byte_names : Array[String] = ["GBK", "gb18030", "Big5", "Shift_JIS"]
 
 // index gb18030: pointer (lead-0x81)*190 + trail -> code point; -1 = error
 

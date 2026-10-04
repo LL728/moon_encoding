@@ -24,8 +24,15 @@
   Restore 重放路径、end-of-queue 截断单 U+FFFD
 - 中文差分向量：`tools/chinese_ref.py` 规范参考实现与 CPython 逐样本交叉分类，
   分歧自动排除并计数（GBK 193+221、gb18030 217+258 向量）
+- **Big5 / Shift_JIS** 完整编解码：规范 `§big5-decoder/encoder`、`§shift_jis-decoder/encoder`
+  逐条实现——Big5 的 4 条双码点命名序列、编码端过滤（pointer ≥ 5024）与六个
+  "取最后出现"码点；Shift_JIS 的 0x80 单字节往返、半角片假名、EUDC PUA 区间
+  （U+E000..U+E757）、¥→0x5C / U+2212→U+FF0D 特例、NEC 重复行（8272..8835）排除；
+  单挂起 lead 状态机 + Restore 重放 + end-of-queue 单 U+FFFD，全切分点跨块等价
+- 多字节差分向量：`tools/multibyte_ref.py`（encode-map 规则与表生成器单一来源），
+  Big5 193+225、Shift_JIS 269+283 向量，3 处规范/CPython 分歧自动排除
 - 文件转码 CLI：`decode` / `encode` 子命令，失败非零退出并打印原因
 - CI：格式检查、`moon check --deny-warn`、构建、wasm-gc 与 js 双后端测试、
   生成物新鲜度、命令行端到端（windows-1252 / iso-8859 / koi8-r /
-  GBK↔gb18030 / gb18030 四字节往返 + 错误路径）
+  GBK↔gb18030 / gb18030 四字节往返 / Big5 / Shift_JIS + 错误路径）
 - 双许可证：代码 Apache-2.0，WHATWG 数据 BSD-3-Clause（`LICENSE-WHATWG`）

@@ -39,10 +39,10 @@ test "decode: unknown label and valid-but-unimplemented encoding are distinct er
     decode(input, "no-such-label"),
     Err(EncodingError::UnknownLabel("no-such-label")),
   )
-  // GBK/gb18030 已接线；换一个合法但尚未接线的编码验证两类错误可区分
-  match decode(input, "big5") {
+  // GBK/gb18030/Big5/Shift_JIS 已接线；换一个合法但尚未接线的编码验证两类错误可区分
+  match decode(input, "euc-jp") {
     Err(EncodingError::UnsupportedEncoding(name)) =>
-      @test.assert_eq(name, "Big5")
+      @test.assert_eq(name, "EUC-JP")
     other =>
       abort("expected UnsupportedEncoding, got " + @debug.to_string(other))
   }

@@ -402,11 +402,14 @@ test "invariants: every legal 4-byte pointer maps to a valid code point" {
 }
 
 ///|
-test "supported_encodings covers the Chinese pair and label aliases route there" {
+test "supported_encodings covers the wired set and label aliases route there" {
+  // 28 单字节 + GBK/gb18030/Big5/Shift_JIS
   let names = supported_encodings()
-  @test.assert_eq(names.length(), 30)
+  @test.assert_eq(names.length(), 32)
   let mut found_gbk = false
   let mut found_gb18030 = false
+  let mut found_big5 = false
+  let mut found_sjis = false
   for n in names {
     if n == "GBK" {
       found_gbk = true
@@ -414,9 +417,17 @@ test "supported_encodings covers the Chinese pair and label aliases route there"
     if n == "gb18030" {
       found_gb18030 = true
     }
+    if n == "Big5" {
+      found_big5 = true
+    }
+    if n == "Shift_JIS" {
+      found_sjis = true
+    }
   }
   @test.assert_eq(found_gbk, true)
   @test.assert_eq(found_gb18030, true)
+  @test.assert_eq(found_big5, true)
+  @test.assert_eq(found_sjis, true)
   // gb2312 / chinese 等别名经 label 归一后走同一条通路
   let input = bytes_of_ints([0xD6, 0xD0, 0xCE, 0xC4])
   @test.assert_eq(decode(input, "gb2312"), Ok(cps_str([0x4E2D, 0x6587])))

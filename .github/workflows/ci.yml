@@ -124,3 +124,28 @@ jobs:
           moon run cmd/main --target wasm-gc -- encode gb18030 \
             "$RUNNER_TEMP/astral.txt" "$RUNNER_TEMP/astral2.bin"
           cmp "$RUNNER_TEMP/astral.bin" "$RUNNER_TEMP/astral2.bin"
+
+          # Big5 端到端（F4 接线）：你好 = a741 a66e，UTF-8 往返逐字节一致
+          printf '\xa7\x41\xa6\x6e' > "$RUNNER_TEMP/hant.bin"
+          moon run cmd/main --target wasm-gc -- decode big5 \
+            "$RUNNER_TEMP/hant.bin" "$RUNNER_TEMP/hant.txt"
+          python3 -c 'import sys; b = open(sys.argv[1], "rb").read(); assert b.hex() == "e4bda0e5a5bd", b.hex()' "$RUNNER_TEMP/hant.txt"
+          moon run cmd/main --target wasm-gc -- encode big5 \
+            "$RUNNER_TEMP/hant.txt" "$RUNNER_TEMP/hant2.bin"
+          cmp "$RUNNER_TEMP/hant.bin" "$RUNNER_TEMP/hant2.bin"
+
+          # Shift_JIS 端到端：日本語 + 0x80（U+0080）+ 半角片假名（U+FF61）
+          printf '\x93\xfa\x96\x7b\x8c\xea' > "$RUNNER_TEMP/ja.bin"
+          moon run cmd/main --target wasm-gc -- decode shift_jis \
+            "$RUNNER_TEMP/ja.bin" "$RUNNER_TEMP/ja.txt"
+          python3 -c 'import sys; b = open(sys.argv[1], "rb").read(); assert b.hex() == "e697a5e69cace8aa9e", b.hex()' "$RUNNER_TEMP/ja.txt"
+          moon run cmd/main --target wasm-gc -- encode shift_jis \
+            "$RUNNER_TEMP/ja.txt" "$RUNNER_TEMP/ja2.bin"
+          cmp "$RUNNER_TEMP/ja.bin" "$RUNNER_TEMP/ja2.bin"
+          printf '\x80\xa1' > "$RUNNER_TEMP/sjis_misc.bin"
+          moon run cmd/main --target wasm-gc -- decode shift_jis \
+            "$RUNNER_TEMP/sjis_misc.bin" "$RUNNER_TEMP/sjis_misc.txt"
+          python3 -c 'import sys; b = open(sys.argv[1], "rb").read(); assert b.hex() == "c280efbda1", b.hex()' "$RUNNER_TEMP/sjis_misc.txt"
+          moon run cmd/main --target wasm-gc -- encode shift_jis \
+            "$RUNNER_TEMP/sjis_misc.txt" "$RUNNER_TEMP/sjis_misc2.bin"
+          cmp "$RUNNER_TEMP/sjis_misc.bin" "$RUNNER_TEMP/sjis_misc2.bin"
