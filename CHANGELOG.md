@@ -42,8 +42,19 @@
   四个多字节编码的二分查找收敛为共享 `encode_index_lookup`
 - EUC 差分向量：EUC-JP 234+211（**57 处**规范/CPython 表格分歧自动排除，
   如 a1dd 的 FF0D/2212）、EUC-KR 190+227（0 处真分歧）
+- **UTF-8 / UTF-16BE / UTF-16LE** 解码 + UTF-8 编码：规范 `§utf-8-decoder/encoder`、
+  `§shared-utf-16-decoder` 逐条实现——UTF-8 的过长/越界/代理区头防线（C0/C1、
+  E0→A0、ED→9F、F0→90、F4→8F）、非法延续字节的**全状态复位 + 重放**、
+  截断单 U+FFFD；共享 UTF-16 的字节序标志、孤立低代理报错、未配对高代理时
+  **恢复当前码元两字节**（字符不丢）、end-of-queue 单 U+FFFD；
+  `supported_encodings()` 达 **37 种**（除 ISO-2022-JP/replacement/x-user-defined
+  三个可裁剪项外全部接线）
+- **规范不定义 UTF-16 编码器**（`§get an encoder` 断言）：encode(utf-16*) 如实返回
+  UnsupportedEncoding，由单测与 CI 端到端共同钉住
+- UTF 差分向量：`tools/utf_ref.py`——UTF-8 203+139（0 分歧）、UTF-16BE 87、
+  UTF-16LE 80 解码向量（各三百余次 CPython strict 报错跳过：孤立代理/奇数长度/非法序列）
 - 文件转码 CLI：`decode` / `encode` 子命令，失败非零退出并打印原因
 - CI：格式检查、`moon check --deny-warn`、构建、wasm-gc 与 js 双后端测试、
   生成物新鲜度、命令行端到端（windows-1252 / iso-8859 / koi8-r /
-  GBK↔gb18030 / gb18030 四字节往返 / Big5 / Shift_JIS / EUC-JP 含 SS3 / EUC-KR + 错误路径）
+  GBK↔gb18030 / gb18030 四字节往返 / Big5 / Shift_JIS / EUC-JP 含 SS3 / EUC-KR / UTF-8 往返 / UTF-16 解码 + 编码器拒绝 + 错误路径）
 - 双许可证：代码 Apache-2.0，WHATWG 数据 BSD-3-Clause（`LICENSE-WHATWG`）

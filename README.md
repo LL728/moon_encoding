@@ -20,7 +20,7 @@ WHATWG Encoding Standard 共定义 40 种编码、228 个 label。
 | 日文 | `Shift_JIS` | ✅ 已实现 |
 | 日文 / 韩文 | `EUC-JP`（含 SS2/SS3）、`EUC-KR` | ✅ 已实现 |
 | 日文 | `ISO-2022-JP`（四模式转义状态机） | ⏳ 计划中 |
-| Unicode | `UTF-8`、`UTF-16BE`、`UTF-16LE` | ⏳ 计划中 |
+| Unicode | `UTF-8`、`UTF-16BE`、`UTF-16LE`（仅解码，见下） | ✅ 已实现 |
 | 中文（繁体） | `Big5` | ✅ 已实现 |
 | 其他 | `ISO-2022-JP`、`replacement`、`x-user-defined` | ⏳ 视进度 |
 
@@ -121,13 +121,19 @@ $ echo $?
   （U+E000..U+E757）、¥→0x5C / U+2212→U+FF0D 特例、NEC 行排除；
   EUC-JP 的 SS2/SS3 前缀与 jis0212 标志复位、EUC-KR 的空位重放（81 5B → U+FFFD + '['）
   与 81 41 → U+AC02 数据锚点、两者 fresh 字节 0x80 报错（对比 GBK/Shift_JIS 的差异）、
-  EUC-JP 编码反向表全部指针 < 8836（规范注记）的全表断言。
+  EUC-JP 编码反向表全部指针 < 8836（规范注记）的全表断言；
+  UTF-8 的非法延续字节状态复位 + 重放（E1 80 41 → U+FFFD + 'A'）、
+  过长/代理区头拒绝（C0 80、E0 80 80、ED A0 80 各自的 U+FFFD 个数）、
+  截断单 U+FFFD；UTF-16 孤立低代理报错、未配对高代理的**当前码元重放**
+  （00D8 4100 → U+FFFD + 'A'，字符不丢）、BOM 按 U+FEFF 输出、
+  以及 UTF-16 编码按规范返回 UnsupportedEncoding。
 - **Python 差分测试**：以 CPython 各编码的 codec 为独立预言机，
-  **8000+ 黄金向量**由 `tools/gen_vectors.py` 生成并提交进仓库，覆盖 28 种单字节编码、
-  GBK/gb18030、Big5/Shift_JIS 与 EUC-JP/EUC-KR（多字节部分经 `tools/chinese_ref.py` /
-  `tools/multibyte_ref.py` 的规范参考实现逐样本与 CPython 交叉分类——两边都同意才
-  进向量，已知的规范/CPython 分歧自动排除并逐编码计数，其中 EUC-JP 达 57 处
-  （JIS 表格的 FF0D/2212 类差异），Shift_JIS 与 EUC-KR 为 0 处真分歧）。
+  **8500+ 黄金向量**由 `tools/gen_vectors.py` 生成并提交进仓库，覆盖 28 种单字节编码、
+  GBK/gb18030、Big5/Shift_JIS、EUC-JP/EUC-KR 与 UTF 三件套（多字节部分经
+  `tools/chinese_ref.py` / `tools/multibyte_ref.py` / `tools/utf_ref.py` 的规范参考实现
+  逐样本与 CPython 交叉分类——两边都同意才进向量，已知的规范/CPython 分歧自动排除并
+  逐编码计数，其中 EUC-JP 达 57 处（JIS 表格的 FF0D/2212 类差异），UTF-16 两方向各有
+  三百余次 CPython strict 报错跳过；UTF-16 只有解码向量，因为规范不定义其编码器）。
   生成器逐字节分类 CPython 与 WHATWG 的关系：`clean`（同值，可用作预言机）进向量，
   `both-error`（两边都报错）由 U+FFFD 单测覆盖，`divergent`（有分歧）排除并逐种记录
   （windows-1252 的 `0x81/0x8D/0x8F/0x90/0x9D`——CPython 报错、WHATWG 映射 C1 控制符——
@@ -149,19 +155,26 @@ moon fmt && moon check --deny-warn && moon test
 | `single_byte.mbt` | 28 种单字节编码共用的表驱动编解码引擎 |
 | `codec.mbt` | 公共 API：`EncodingError`、流式 `Decoder`、`decode` / `encode` |
 | `gbk.mbt` | GBK/gb18030 状态机与编码器（规范 §gb18030-decoder/encoder 逐条实现） |
+| `utf.mbt` | UTF-8 / 共享 UTF-16 状态机与 UTF-8 编码器（规范 §utf-8 / §shared-utf-16 逐条实现） |
 | `euc.mbt` | EUC-JP / EUC-KR 状态机与编码器（规范 §euc-jp / §euc-kr 逐条实现） |
 | `multibyte.mbt` | Big5 与 Shift_JIS 状态机与编码器（规范 §big5 / §shift_jis 逐条实现） |
 | `gen_label.mbt` / `gen_single_byte.mbt` / `gen_chinese.mbt` / `gen_big5_sjis.mbt` / `gen_euc.mbt` | 生成物：label 表、单字节表、gb18030 与 Big5/jis0208/EUC 各索引与编码反向表（勿手改） |
 | `gen_w1252_vectors_wbtest.mbt` | 生成物：CPython 差分黄金向量（勿手改） |
 | `cmd/main/` | 文件转码 CLI |
-| `tools/` | 规范数据 vendor、表与差分向量生成器、规范参考实现（`chinese_ref.py`、`multibyte_ref.py`，encode-map 规则单一来源） |
+| `tools/` | 规范数据 vendor、表与差分向量生成器、规范参考实现（`chinese_ref.py`、`multibyte_ref.py`、`utf_ref.py`，encode-map 规则单一来源） |
 
 ## 已知限制
 
 - 已实现范围为 28 种 legacy 单字节编码 + `GBK` / `gb18030` / `Big5` / `Shift_JIS` /
-  `EUC-JP` / `EUC-KR`（共 34 种，`supported_encodings()` 可查询）；仅剩
-  `ISO-2022-JP`、UTF 系、`replacement`、`x-user-defined` 尚未接线，
-  返回 `UnsupportedEncoding`。
+  `EUC-JP` / `EUC-KR` / `UTF-8` / `UTF-16BE` / `UTF-16LE`（共 37 种，
+  `supported_encodings()` 可查询）；仅剩 `ISO-2022-JP`、`replacement`、
+  `x-user-defined` 三个可裁剪的特殊编码尚未接线，返回 `UnsupportedEncoding`。
+- **规范不定义 UTF-16 编码器**（`§get an encoder` 断言 encoding 不是 replacement
+  或 UTF-16BE/LE）：`encode(..., "utf-16le" / "utf-16be")` 如实返回
+  `UnsupportedEncoding`，解码不受影响。
+- 未实现 BOM 嗅探与 `decode()` 的自动 BOM 覆写；label 由调用方显式给出。
+  因此 UTF-16 输入里的 BOM 会作为 U+FEFF 字符解出（与 CPython 的
+  `utf-16-be` / `utf-16-le` 行为一致）。
 - 未实现 BOM 嗅探与 `decode()` 的自动 BOM 覆写；label 由调用方显式给出。
 - 编码侧只提供 fatal 模式原语；规范中 HTML 表单用的 `&#码点;` 替换模式（html 模式）
   尚未提供。

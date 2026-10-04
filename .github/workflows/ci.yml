@@ -171,3 +171,31 @@ jobs:
           moon run cmd/main --target wasm-gc -- encode euc-kr \
             "$RUNNER_TEMP/ko.txt" "$RUNNER_TEMP/ko2.bin"
           cmp "$RUNNER_TEMP/ko.bin" "$RUNNER_TEMP/ko2.bin"
+
+          # UTF-8 端到端（F6 接线）：完整往返
+          printf 'Aé中' > "$RUNNER_TEMP/u8.bin"
+          moon run cmd/main --target wasm-gc -- decode utf-8 \
+            "$RUNNER_TEMP/u8.bin" "$RUNNER_TEMP/u8.txt"
+          python3 -c 'import sys; b = open(sys.argv[1], "rb").read(); assert b.hex() == "41c3a9e4b8ad", b.hex()' "$RUNNER_TEMP/u8.txt"
+          moon run cmd/main --target wasm-gc -- encode utf-8 \
+            "$RUNNER_TEMP/u8.txt" "$RUNNER_TEMP/u8b.bin"
+          cmp "$RUNNER_TEMP/u8.bin" "$RUNNER_TEMP/u8b.bin"
+
+          # UTF-16LE：BOM + A + 😀（U+1F600 代理对），BOM 不嗅探、按 U+FEFF 解出
+          python3 -c 'import sys; open(sys.argv[1], "wb").write((chr(0xFEFF) + "A" + chr(0x1F600)).encode("utf-16-le"))' "$RUNNER_TEMP/u16le.bin"
+          moon run cmd/main --target wasm-gc -- decode utf-16le \
+            "$RUNNER_TEMP/u16le.bin" "$RUNNER_TEMP/u16le.txt"
+          python3 -c 'import sys; b = open(sys.argv[1], "rb").read(); assert b.hex() == "efbbbf41f09f9880", b.hex()' "$RUNNER_TEMP/u16le.txt"
+
+          # UTF-16BE decode
+          printf '\x4e\x2d\x00\x41' > "$RUNNER_TEMP/u16be.bin"
+          moon run cmd/main --target wasm-gc -- decode utf-16be \
+            "$RUNNER_TEMP/u16be.bin" "$RUNNER_TEMP/u16be.txt"
+          python3 -c 'import sys; b = open(sys.argv[1], "rb").read(); assert b.hex() == "e4b8ad41", b.hex()' "$RUNNER_TEMP/u16be.txt"
+
+          # 规范不定义 UTF-16 编码器 -> 非零退出且消息可读
+          if moon run cmd/main --target wasm-gc -- encode utf-16le \
+            "$RUNNER_TEMP/u16le.txt" "$RUNNER_TEMP/u16le.bin" > "$RUNNER_TEMP/e.txt"; then
+            echo "expected failure: spec defines no UTF-16 encoder"; exit 1
+          fi
+          grep -q 'UnsupportedEncoding("UTF-16LE")' "$RUNNER_TEMP/e.txt"

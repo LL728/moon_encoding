@@ -95,9 +95,10 @@ test "encode: unknown label and unimplemented encodings are distinct errors" {
     Err(EncodingError::UnknownLabel(l)) => @test.assert_eq(l, "no-such-label")
     other => abort("expected UnknownLabel, got " + @debug.to_string(other))
   }
-  match encode("x", "utf-8") {
+  // UTF-8 已可编码；用仍未接线的 ISO-2022-JP（四模式转义状态机）验证
+  match encode("x", "iso-2022-jp") {
     Err(EncodingError::UnsupportedEncoding(name)) =>
-      @test.assert_eq(name, "UTF-8")
+      @test.assert_eq(name, "ISO-2022-JP")
     other =>
       abort("expected UnsupportedEncoding, got " + @debug.to_string(other))
   }

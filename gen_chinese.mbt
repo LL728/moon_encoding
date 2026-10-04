@@ -8,7 +8,8 @@
 
 ///|
 let multi_byte_names : Array[String] = [
-  "GBK", "gb18030", "Big5", "Shift_JIS", "EUC-JP", "EUC-KR",
+  "GBK", "gb18030", "Big5", "Shift_JIS", "EUC-JP", "EUC-KR", "UTF-8", "UTF-16BE",
+  "UTF-16LE",
 ]
 
 // index gb18030: pointer (lead-0x81)*190 + trail -> code point; -1 = error

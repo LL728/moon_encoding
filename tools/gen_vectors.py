@@ -42,6 +42,7 @@ import sys
 
 import chinese_ref
 import multibyte_ref
+import utf_ref
 
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -335,6 +336,49 @@ def main() -> None:
         lines.append("  }")
         lines.append("}")
         lines.append("")
+
+    # ---- UTF-8 / UTF-16BE / UTF-16LE -------------------------------------
+    for stats, dec_vecs, enc_vecs in utf_ref.gen_vectors(rng):
+        name, codec, _, _, n_skip, n_div = stats
+        lines.append(f"// {name}: CPython-error skips={n_skip}, spec/CPython divergent={n_div}")
+        lines.append("")
+        lines.append(f'test "python differential: {name} decode vs CPython {codec} (generated)" {{')
+        lines.append("  let vectors : Array[(Array[Int], String)] = [")
+        for bs, expect in dec_vecs:
+            lines.append(f"    ({moon_int_list(bs)}, {moon_string(expect)}),")
+        lines.append("  ]")
+        lines.append(f'  let label = "{name}"')
+        lines.append("  for i in 0..<vectors.length() {")
+        lines.append("    let (input, expect) = vectors[i]")
+        lines.append("    @test.assert_eq(decode(bytes_of_ints(input), label), Ok(expect))")
+        lines.append("  }")
+        lines.append("}")
+        lines.append("")
+        if enc_vecs:
+            lines.append(
+                f'test "python differential: {name} encode vs CPython {codec} (generated)" {{'
+            )
+            lines.append("  let vectors : Array[(String, Array[Int])] = [")
+            for text, bs in enc_vecs:
+                lines.append(f"    ({moon_string(text)}, {moon_int_list(bs)}),")
+            lines.append("  ]")
+            lines.append(f'  let label = "{name}"')
+            lines.append("  for i in 0..<vectors.length() {")
+            lines.append("    let (text, expect) = vectors[i]")
+            lines.append(
+                "    @test.assert_eq(encode(text, label), Ok(bytes_of_ints(expect)))"
+            )
+            lines.append("  }")
+            lines.append("}")
+            lines.append("")
+        else:
+            lines.append(
+                f"// {name}: encoding.bs defines no encoder (§get an encoder asserts"
+            )
+            lines.append(
+                "// encoding is not replacement or UTF-16BE/LE); decode-only suite"
+            )
+            lines.append("")
 
     out = ROOT / "gen_w1252_vectors_wbtest.mbt"
     out.write_text("\n".join(lines), encoding="utf-8", newline="\n")

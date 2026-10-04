@@ -30,6 +30,8 @@ enum DecoderState {
   ShiftJis(LeadState)
   EucJp(EucJpState)
   EucKr(LeadState)
+  Utf8(Utf8State)
+  Utf16(Utf16State)
 }
 
 ///|
@@ -85,6 +87,24 @@ pub fn Decoder::new(label : String) -> Result[Decoder, EncodingError] {
               }
               Ok(decoder)
             }
+            "UTF-8" => {
+              let decoder : Decoder = {
+                state: DecoderState::Utf8(Utf8State::new()),
+              }
+              Ok(decoder)
+            }
+            "UTF-16BE" => {
+              let decoder : Decoder = {
+                state: DecoderState::Utf16(Utf16State::new(true)),
+              }
+              Ok(decoder)
+            }
+            "UTF-16LE" => {
+              let decoder : Decoder = {
+                state: DecoderState::Utf16(Utf16State::new(false)),
+              }
+              Ok(decoder)
+            }
             _ => Err(EncodingError::UnsupportedEncoding(encoding))
           }
       }
@@ -102,6 +122,8 @@ pub fn Decoder::consume(self : Decoder, chunk : Bytes) -> String {
     DecoderState::ShiftJis(state) => shift_jis_consume(state, chunk)
     DecoderState::EucJp(state) => euc_jp_consume(state, chunk)
     DecoderState::EucKr(state) => euc_kr_consume(state, chunk)
+    DecoderState::Utf8(state) => utf8_consume(state, chunk)
+    DecoderState::Utf16(state) => utf16_consume(state, chunk)
   }
 }
 
@@ -116,6 +138,8 @@ pub fn Decoder::finish(self : Decoder) -> String {
     DecoderState::ShiftJis(state) => shift_jis_finish(state)
     DecoderState::EucJp(state) => euc_jp_finish(state)
     DecoderState::EucKr(state) => euc_kr_finish(state)
+    DecoderState::Utf8(state) => utf8_finish(state)
+    DecoderState::Utf16(state) => utf16_finish(state)
   }
 }
 
@@ -167,6 +191,11 @@ pub fn encode(text : String, label : String) -> Result[Bytes, EncodingError] {
             "Shift_JIS" => shift_jis_encode(text)
             "EUC-JP" => euc_jp_encode(text)
             "EUC-KR" => euc_kr_encode(text)
+            "UTF-8" => utf8_encode(text)
+            // 规范 §get an encoder 断言 encoding 不是 replacement 或
+            // UTF-16BE/LE——WHATWG 不定义 UTF-16 编码器，此处如实报未支持。
+            "UTF-16BE" | "UTF-16LE" =>
+              Err(EncodingError::UnsupportedEncoding(encoding))
             _ => Err(EncodingError::UnsupportedEncoding(encoding))
           }
       }

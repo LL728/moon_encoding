@@ -51,12 +51,21 @@ CHINESE_GROUP = "Legacy multi-byte Chinese (simplified) encodings"
 TRADITIONAL_GROUP = "Legacy multi-byte Chinese (traditional) encodings"
 JAPANESE_GROUP = "Legacy multi-byte Japanese encodings"
 KOREAN_GROUP = "Legacy multi-byte Korean encodings"
+THE_ENCODING_GROUP = "The Encoding"
+MISC_GROUP = "Legacy miscellaneous encodings"
 
 # Encodings wired end-to-end in the multi-byte milestones. Each entry must be
 # a member of one of the groups above (asserted at generation time); tables
 # are only emitted for wired names, so unsupported encodings never leave
 # unused tables behind (deny-warn would flag them).
-MULTI_BYTE_WIRED = ["GBK", "gb18030", "Big5", "Shift_JIS", "EUC-JP", "EUC-KR"]
+# Everything wired beyond the single-byte group: six legacy multi-byte
+# encodings plus the three UTF encodings (UTF-8's group is "The Encoding";
+# UTF-16BE/LE live in the miscellaneous group alongside the cut-scope
+# replacement / x-user-defined).
+MULTI_BYTE_WIRED = [
+    "GBK", "gb18030", "Big5", "Shift_JIS", "EUC-JP", "EUC-KR",
+    "UTF-8", "UTF-16BE", "UTF-16LE",
+]
 
 # Encoding name -> indexes.json key, where they differ. ISO-8859-8-I shares
 # the ISO-8859-8 index (it is the logical-order label variant; the standard
@@ -101,6 +110,9 @@ def gen_chinese(encodings, indexes) -> str:
         "Shift_JIS": JAPANESE_GROUP,
         "EUC-JP": JAPANESE_GROUP,
         "EUC-KR": KOREAN_GROUP,
+        "UTF-8": THE_ENCODING_GROUP,
+        "UTF-16BE": MISC_GROUP,
+        "UTF-16LE": MISC_GROUP,
     }
     by_group = {h["heading"]: [e["name"] for e in h["encodings"]] for h in encodings}
     for name in MULTI_BYTE_WIRED:
