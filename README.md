@@ -3,7 +3,7 @@
 [![CI](https://github.com/LL728/moon_encoding/actions/workflows/ci.yml/badge.svg)](https://github.com/LL728/moon_encoding/actions/workflows/ci.yml)
 
 WHATWG Encoding Standard 的 MoonBit 实现：完整的 label 解析（228 个）、
-流式编解码 API 与文件转码命令行工具，按里程碑覆盖该标准定义的 40 种编码。
+流式解码 API、一次性编码 API 与文件转码命令行工具，按里程碑覆盖该标准定义的 40 种编码。
 
 数据表直接由 [whatwg/encoding](https://github.com/whatwg/encoding) 的规范源数据生成
 （固定版本 `2c3853e`，与 Rust `encoding_rs` 的表生成同源），不经过任何二手实现。
@@ -25,6 +25,27 @@ WHATWG Encoding Standard 共定义 40 种编码、228 个 label。
 
 尚未实现的编码会返回明确的 `UnsupportedEncoding` 错误（而不是静默失败），
 未知 label 返回 `UnknownLabel`——两者可区分。
+
+## 与 MoonBit 生态现有实现的关系
+
+Mooncakes 上已有 [`f4ah6o/encoding_sjis`](https://mooncakes.io/docs/f4ah6o/encoding_sjis)
+（Shift_JIS 解码器，Apache-2.0）等单编码实现。为避免"功能重叠"的歧义，明确如下：
+
+- **复用关系：无依赖、无代码复用。** 本库依赖清单只有 `moonbitlang/core` 与
+  `moonbitlang/x`（CLI 文件读写），不含 `encoding_sjis`；Shift_JIS 部分按 `encoding.bs`
+  （whatwg/encoding @ `2c3853e`）逐条独立实现，数据表由规范源数据生成。两者只是
+  数据上游同源（WHATWG 规范），代码路径完全不同。
+- **重叠范围：** 交集只有"Shift_JIS 解码（含跨块流式、U+FFFD 替换）"这一项能力。
+  **流式解码并非本库独有**，`encoding_sjis` 同样提供流式解码——本库的增量在覆盖范围与编码方向，如下表。
+- **扩展关系：** 本库在重叠项之外扩展的是编码方向与全集覆盖：
+
+| 维度 | `f4ah6o/encoding_sjis` | 本库 `moon_encoding` |
+| --- | --- | --- |
+| 编码范围 | 仅 Shift_JIS 一种 | 40 种编码 / 228 个 label 全集解析，37 种已接线编解码 |
+| 方向 | 仅解码（无编码端） | 解码 + 编码（fatal 模式），含 Shift_JIS 编码器 |
+| 流式解码 | ✅ `new_decoder` / `decode_to_string` | ✅ `Decoder::new` / `consume` / `finish`，统一覆盖全部已接线编码 |
+| 合规基准 | encoding_rs-compliant（自述） | WHATWG `encoding.bs` 逐条实现 |
+| 附加能力 | — | 28 种单字节编码、GBK/gb18030、Big5、EUC-JP/EUC-KR、UTF-8/UTF-16、CLI 转码、CPython 差分测试 |
 
 ## 安装
 
