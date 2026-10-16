@@ -203,7 +203,7 @@ test "UTF-16: the spec defines no encoder (§get an encoder assertion)" {
 
 ///|
 test "UTF-8 and UTF-16: chunked equals whole at every split position" {
-  let cases : Array[(String, Array[Int])] = [
+  let cases : Array[(String, Array[Int32])] = [
     (
       "UTF-8",
       [

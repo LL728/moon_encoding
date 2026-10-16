@@ -289,7 +289,7 @@ test "Shift_JIS: end-of-queue flushes pending lead as a single U+FFFD" {
 ///|
 test "Big5 and Shift_JIS: chunked equals whole at every split position" {
   // 语料覆盖：合法对、繁体、半角、EUDC、命名序列、非法尾字节、ASCII/0x80
-  let cases : Array[(String, Array[Int])] = [
+  let cases : Array[(String, Array[Int32])] = [
     (
       "Big5",
       [

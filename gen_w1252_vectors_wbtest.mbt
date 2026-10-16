@@ -43,7 +43,7 @@
 
 ///|
 test "python differential: ASCII printable identity via three encodings (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x20], " "),
     ([0x21], "!"),
     ([0x22], "\""),
@@ -151,7 +151,7 @@ test "python differential: ASCII printable identity via three encodings (generat
 
 ///|
 test "python differential: IBM866 decode vs CPython cp866 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "А"),
     ([0x81], "Б"),
     ([0x82], "В"),
@@ -508,7 +508,7 @@ test "python differential: IBM866 decode vs CPython cp866 (generated)" {
 
 ///|
 test "python differential: ISO-8859-2 decode vs CPython iso8859_2 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "\u{0080}"),
     ([0x81], "\u{0081}"),
     ([0x82], "\u{0082}"),
@@ -849,7 +849,7 @@ test "python differential: ISO-8859-2 decode vs CPython iso8859_2 (generated)" {
 
 ///|
 test "python differential: ISO-8859-3 decode vs CPython iso8859_3 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "\u{0080}"),
     ([0x81], "\u{0081}"),
     ([0x82], "\u{0082}"),
@@ -1191,7 +1191,7 @@ test "python differential: ISO-8859-3 decode vs CPython iso8859_3 (generated)" {
 
 ///|
 test "python differential: ISO-8859-4 decode vs CPython iso8859_4 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "\u{0080}"),
     ([0x81], "\u{0081}"),
     ([0x82], "\u{0082}"),
@@ -1542,7 +1542,7 @@ test "python differential: ISO-8859-4 decode vs CPython iso8859_4 (generated)" {
 
 ///|
 test "python differential: ISO-8859-5 decode vs CPython iso8859_5 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "\u{0080}"),
     ([0x81], "\u{0081}"),
     ([0x82], "\u{0082}"),
@@ -1895,7 +1895,7 @@ test "python differential: ISO-8859-5 decode vs CPython iso8859_5 (generated)" {
 
 ///|
 test "python differential: ISO-8859-6 decode vs CPython iso8859_6 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "\u{0080}"),
     ([0x81], "\u{0081}"),
     ([0x82], "\u{0082}"),
@@ -2197,7 +2197,7 @@ test "python differential: ISO-8859-6 decode vs CPython iso8859_6 (generated)" {
 
 ///|
 test "python differential: ISO-8859-7 decode vs CPython iso8859_7 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "\u{0080}"),
     ([0x81], "\u{0081}"),
     ([0x82], "\u{0082}"),
@@ -2529,7 +2529,7 @@ test "python differential: ISO-8859-7 decode vs CPython iso8859_7 (generated)" {
 
 ///|
 test "python differential: ISO-8859-8 decode vs CPython iso8859_8 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "\u{0080}"),
     ([0x81], "\u{0081}"),
     ([0x82], "\u{0082}"),
@@ -2856,7 +2856,7 @@ test "python differential: ISO-8859-8 decode vs CPython iso8859_8 (generated)" {
 
 ///|
 test "python differential: ISO-8859-8-I decode vs CPython iso8859_8 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "\u{0080}"),
     ([0x81], "\u{0081}"),
     ([0x82], "\u{0082}"),
@@ -3147,7 +3147,7 @@ test "python differential: ISO-8859-8-I decode vs CPython iso8859_8 (generated)"
 
 ///|
 test "python differential: ISO-8859-10 decode vs CPython iso8859_10 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "\u{0080}"),
     ([0x81], "\u{0081}"),
     ([0x82], "\u{0082}"),
@@ -3468,7 +3468,7 @@ test "python differential: ISO-8859-10 decode vs CPython iso8859_10 (generated)"
 
 ///|
 test "python differential: ISO-8859-13 decode vs CPython iso8859_13 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "\u{0080}"),
     ([0x81], "\u{0081}"),
     ([0x82], "\u{0082}"),
@@ -3834,7 +3834,7 @@ test "python differential: ISO-8859-13 decode vs CPython iso8859_13 (generated)"
 
 ///|
 test "python differential: ISO-8859-14 decode vs CPython iso8859_14 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "\u{0080}"),
     ([0x81], "\u{0081}"),
     ([0x82], "\u{0082}"),
@@ -4136,7 +4136,7 @@ test "python differential: ISO-8859-14 decode vs CPython iso8859_14 (generated)"
 
 ///|
 test "python differential: ISO-8859-15 decode vs CPython iso8859_15 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "\u{0080}"),
     ([0x81], "\u{0081}"),
     ([0x82], "\u{0082}"),
@@ -4472,7 +4472,7 @@ test "python differential: ISO-8859-15 decode vs CPython iso8859_15 (generated)"
 
 ///|
 test "python differential: ISO-8859-16 decode vs CPython iso8859_16 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "\u{0080}"),
     ([0x81], "\u{0081}"),
     ([0x82], "\u{0082}"),
@@ -4831,7 +4831,7 @@ test "python differential: ISO-8859-16 decode vs CPython iso8859_16 (generated)"
 
 ///|
 test "python differential: KOI8-R decode vs CPython koi8_r (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "─"),
     ([0x81], "│"),
     ([0x82], "┌"),
@@ -5158,7 +5158,7 @@ test "python differential: KOI8-R decode vs CPython koi8_r (generated)" {
 
 ///|
 test "python differential: KOI8-U decode vs CPython koi8_u (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "─"),
     ([0x81], "│"),
     ([0x82], "┌"),
@@ -5488,7 +5488,7 @@ test "python differential: KOI8-U decode vs CPython koi8_u (generated)" {
 
 ///|
 test "python differential: macintosh decode vs CPython mac_roman (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "Ä"),
     ([0x81], "Å"),
     ([0x82], "Ç"),
@@ -5865,7 +5865,7 @@ test "python differential: macintosh decode vs CPython mac_roman (generated)" {
 
 ///|
 test "python differential: windows-874 decode vs CPython cp874 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "€"),
     ([0x85], "…"),
     ([0x91], "‘"),
@@ -6175,7 +6175,7 @@ test "python differential: windows-874 decode vs CPython cp874 (generated)" {
 
 ///|
 test "python differential: windows-1250 decode vs CPython cp1250 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "€"),
     ([0x82], "‚"),
     ([0x84], "„"),
@@ -6502,7 +6502,7 @@ test "python differential: windows-1250 decode vs CPython cp1250 (generated)" {
 
 ///|
 test "python differential: windows-1251 decode vs CPython cp1251 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "Ђ"),
     ([0x81], "Ѓ"),
     ([0x82], "‚"),
@@ -6831,7 +6831,7 @@ test "python differential: windows-1251 decode vs CPython cp1251 (generated)" {
 
 ///|
 test "python differential: windows-1252 decode vs CPython cp1252 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "€"),
     ([0x82], "‚"),
     ([0x83], "ƒ"),
@@ -7154,7 +7154,7 @@ test "python differential: windows-1252 decode vs CPython cp1252 (generated)" {
 
 ///|
 test "python differential: windows-1253 decode vs CPython cp1253 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "€"),
     ([0x82], "‚"),
     ([0x83], "ƒ"),
@@ -7501,7 +7501,7 @@ test "python differential: windows-1253 decode vs CPython cp1253 (generated)" {
 
 ///|
 test "python differential: windows-1254 decode vs CPython cp1254 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "€"),
     ([0x82], "‚"),
     ([0x83], "ƒ"),
@@ -7839,7 +7839,7 @@ test "python differential: windows-1254 decode vs CPython cp1254 (generated)" {
 
 ///|
 test "python differential: windows-1255 decode vs CPython cp1255 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "€"),
     ([0x82], "‚"),
     ([0x83], "ƒ"),
@@ -8137,7 +8137,7 @@ test "python differential: windows-1255 decode vs CPython cp1255 (generated)" {
 
 ///|
 test "python differential: windows-1256 decode vs CPython cp1256 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "€"),
     ([0x81], "پ"),
     ([0x82], "‚"),
@@ -8520,7 +8520,7 @@ test "python differential: windows-1256 decode vs CPython cp1256 (generated)" {
 
 ///|
 test "python differential: windows-1257 decode vs CPython cp1257 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "€"),
     ([0x82], "‚"),
     ([0x84], "„"),
@@ -8870,7 +8870,7 @@ test "python differential: windows-1257 decode vs CPython cp1257 (generated)" {
 
 ///|
 test "python differential: windows-1258 decode vs CPython cp1258 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "€"),
     ([0x82], "‚"),
     ([0x83], "ƒ"),
@@ -9215,7 +9215,7 @@ test "python differential: windows-1258 decode vs CPython cp1258 (generated)" {
 
 ///|
 test "python differential: x-mac-cyrillic decode vs CPython mac_cyrillic (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x80], "А"),
     ([0x81], "Б"),
     ([0x82], "В"),
@@ -9585,7 +9585,7 @@ test "python differential: x-mac-cyrillic decode vs CPython mac_cyrillic (genera
 
 ///|
 test "python differential: IBM866 encode vs CPython cp866 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     (
       "Э{9▒уБ╣p╖!'╪XШ╓",
       [
@@ -9690,7 +9690,7 @@ test "python differential: IBM866 encode vs CPython cp866 (generated)" {
 
 ///|
 test "python differential: ISO-8859-2 encode vs CPython iso8859_2 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     ("8śÓÂ\"}đ˝", [0x38, 0xB6, 0xD3, 0xC2, 0x22, 0x7D, 0xF0, 0xBD]),
     (
       "sĂZáąŰĄ\u{0099}óW5~ýZ¤\u{008B}VąÁ",
@@ -9835,7 +9835,7 @@ test "python differential: ISO-8859-2 encode vs CPython iso8859_2 (generated)" {
 
 ///|
 test "python differential: ISO-8859-3 encode vs CPython iso8859_3 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     (
       "k pU&$3%^è\u{0081}ùÙçF[5ëô^F`Ú",
       [
@@ -9954,7 +9954,7 @@ test "python differential: ISO-8859-3 encode vs CPython iso8859_3 (generated)" {
 
 ///|
 test "python differential: ISO-8859-4 encode vs CPython iso8859_4 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     (
       "Õ_§ũWātg\u{009F}Æ",
       [0xD5, 0x5F, 0xA7, 0xFD, 0x57, 0xE0, 0x74, 0x67, 0x9F, 0xC6],
@@ -10068,7 +10068,7 @@ test "python differential: ISO-8859-4 encode vs CPython iso8859_4 (generated)" {
 
 ///|
 test "python differential: ISO-8859-5 encode vs CPython iso8859_5 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     (
       "]ун\u{0083}\u{0090}GП\u{009A}ЛАkќ\u{009D}ЈвEA",
       [
@@ -10174,7 +10174,7 @@ test "python differential: ISO-8859-5 encode vs CPython iso8859_5 (generated)" {
 
 ///|
 test "python differential: ISO-8859-6 encode vs CPython iso8859_6 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     (
       "3\u{0089}يs)ر­\u{0084}k\u{008D}ا{غ\u{0090}Y2غ9",
       [
@@ -10297,7 +10297,7 @@ test "python differential: ISO-8859-6 encode vs CPython iso8859_6 (generated)" {
 
 ///|
 test "python differential: ISO-8859-7 encode vs CPython iso8859_7 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     (
       "όj¨7\u{009B}%ςλ7\u{008E}l",
       [0xFC, 0x6A, 0xA8, 0x37, 0x9B, 0x25, 0xF2, 0xEB, 0x37, 0x8E, 0x6C],
@@ -10394,7 +10394,7 @@ test "python differential: ISO-8859-7 encode vs CPython iso8859_7 (generated)" {
 
 ///|
 test "python differential: ISO-8859-8 encode vs CPython iso8859_8 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     ("k}S", [0x6B, 0x7D, 0x53]),
     (
       "\u{0091}o¾L.O\u{008A}\u{0096}תN¤ץ¼\u{0097}",
@@ -10521,7 +10521,7 @@ test "python differential: ISO-8859-8 encode vs CPython iso8859_8 (generated)" {
 
 ///|
 test "python differential: ISO-8859-8-I encode vs CPython iso8859_8 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     (
       " ®tקiפ¦Xצ«¹°j»oEI¹(\u{0084}bY´",
       [
@@ -10644,7 +10644,7 @@ test "python differential: ISO-8859-8-I encode vs CPython iso8859_8 (generated)"
 
 ///|
 test "python differential: ISO-8859-10 encode vs CPython iso8859_10 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     (
       "~Ą\u{009F}6\u{0081}Ĩ\u{0094}ų \u{009A}\u{008C}v2ŪXęĖĻjĮ",
       [
@@ -10754,7 +10754,7 @@ test "python differential: ISO-8859-10 encode vs CPython iso8859_10 (generated)"
 
 ///|
 test "python differential: ISO-8859-13 encode vs CPython iso8859_13 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     (
       "aAµ“y\u{0092}Üżēō\u{0089}AH·\u{0087}K",
       [
@@ -10868,7 +10868,7 @@ test "python differential: ISO-8859-13 encode vs CPython iso8859_13 (generated)"
 
 ///|
 test "python differential: ISO-8859-14 encode vs CPython iso8859_14 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     ("C.õṗe", [0x43, 0x2E, 0xF5, 0xB9, 0x65]),
     ("$§@yÙ", [0x24, 0xA7, 0x40, 0x79, 0xD9]),
     (
@@ -10985,7 +10985,7 @@ test "python differential: ISO-8859-14 encode vs CPython iso8859_14 (generated)"
 
 ///|
 test "python differential: ISO-8859-15 encode vs CPython iso8859_15 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     (
       "<þ¥ø\u{008A}\u{0081}BM^š",
       [0x3C, 0xFE, 0xA5, 0xF8, 0x8A, 0x81, 0x42, 0x4D, 0x5E, 0xA8],
@@ -11123,7 +11123,7 @@ test "python differential: ISO-8859-15 encode vs CPython iso8859_15 (generated)"
 
 ///|
 test "python differential: ISO-8859-16 encode vs CPython iso8859_16 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     ("Ò#w\u{009A}7Ê%y", [0xD2, 0x23, 0x77, 0x9A, 0x37, 0xCA, 0x25, 0x79]),
     ("û{}", [0xFB, 0x7B, 0x7D]),
     (
@@ -11257,7 +11257,7 @@ test "python differential: ISO-8859-16 encode vs CPython iso8859_16 (generated)"
 
 ///|
 test "python differential: KOI8-R encode vs CPython koi8_r (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     ("┘Сэ>вт", [0x85, 0xF3, 0xDC, 0x3E, 0xD7, 0xD4]),
     (
       "E└╝в!ИGk÷ыС_∙│²",
@@ -11382,7 +11382,7 @@ test "python differential: KOI8-R encode vs CPython koi8_r (generated)" {
 
 ///|
 test "python differential: KOI8-U encode vs CPython koi8_u (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     (
       "▒√|≈а╙д╡Э4й~R8EUeь",
       [
@@ -11510,7 +11510,7 @@ test "python differential: KOI8-U encode vs CPython koi8_u (generated)" {
 
 ///|
 test "python differential: macintosh encode vs CPython mac_roman (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     ("T", [0x54]),
     (
       "∏o“nF$gÚcŸ—=ã",
@@ -11650,7 +11650,7 @@ test "python differential: macintosh encode vs CPython mac_roman (generated)" {
 
 ///|
 test "python differential: windows-874 encode vs CPython cp874 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     ("ิง๊พฅg’{", [0xD4, 0xA7, 0xEA, 0xBE, 0xA5, 0x67, 0x92, 0x7B]),
     (
       "iถษyฯ–ำo๏ฏศๆ฿ฦถ‘โ ฮไo๊X",
@@ -11797,7 +11797,7 @@ test "python differential: windows-874 encode vs CPython cp874 (generated)" {
 
 ///|
 test "python differential: windows-1250 encode vs CPython cp1250 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     (";%", [0x3B, 0x25]),
     (
       "—ŻDY‰m»Ĺ„î",
@@ -11910,7 +11910,7 @@ test "python differential: windows-1250 encode vs CPython cp1250 (generated)" {
 
 ///|
 test "python differential: windows-1251 encode vs CPython cp1251 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     (
       "гhЈВvJ®ы((СU%‚B'њуі@%1·>",
       [
@@ -12021,7 +12021,7 @@ test "python differential: windows-1251 encode vs CPython cp1251 (generated)" {
 
 ///|
 test "python differential: windows-1252 encode vs CPython cp1252 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     (
       "¤«…SF;¤dËŒ‰b¯ãq",
       [
@@ -12142,7 +12142,7 @@ test "python differential: windows-1252 encode vs CPython cp1252 (generated)" {
 
 ///|
 test "python differential: windows-1253 encode vs CPython cp1253 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     (
       "Uο«0 IF’l}ήΓhNώsψ?Kνl",
       [
@@ -12262,7 +12262,7 @@ test "python differential: windows-1253 encode vs CPython cp1253 (generated)" {
 
 ///|
 test "python differential: windows-1254 encode vs CPython cp1254 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     (
       "“ãSùP5Æ÷y?",
       [0x93, 0xE3, 0x53, 0xF9, 0x50, 0x35, 0xC6, 0xF7, 0x79, 0x3F],
@@ -12373,7 +12373,7 @@ test "python differential: windows-1254 encode vs CPython cp1254 (generated)" {
 
 ///|
 test "python differential: windows-1255 encode vs CPython cp1255 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     (
       "µH§ µ÷ֳע־q ",
       [0xB5, 0x48, 0xA7, 0xA0, 0xB5, 0xBA, 0xC3, 0xF2, 0xCE, 0x71, 0xA0],
@@ -12485,7 +12485,7 @@ test "python differential: windows-1255 encode vs CPython cp1255 (generated)" {
 
 ///|
 test "python differential: windows-1256 encode vs CPython cp1256 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     (
       "‰چx²ُِw.:?QNV¬پ",
       [
@@ -12616,7 +12616,7 @@ test "python differential: windows-1256 encode vs CPython cp1256 (generated)" {
 
 ///|
 test "python differential: windows-1257 encode vs CPython cp1257 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     (
       "%wN<0(F‹Žć›¸č¦»ł§»%%Wä%M",
       [
@@ -12745,7 +12745,7 @@ test "python differential: windows-1257 encode vs CPython cp1257 (generated)" {
 
 ///|
 test "python differential: windows-1258 encode vs CPython cp1258 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     (
       "Ưy¦>;·<¤QÆ",
       [0xDD, 0x79, 0xA6, 0x3E, 0x3B, 0xB7, 0x3C, 0xA4, 0x51, 0xC6],
@@ -12846,7 +12846,7 @@ test "python differential: windows-1258 encode vs CPython cp1258 (generated)" {
 
 ///|
 test "python differential: x-mac-cyrillic encode vs CPython mac_cyrillic (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     (
       "\\,9t‘ЃuU¶.DК†О|–ДО`ћ¶Гб",
       [
@@ -13059,7 +13059,7 @@ test "labels: single-byte names and first labels resolve (generated)" {
 
 ///|
 test "python differential: GBK decode vs CPython gbk (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x00], "\u{0000}"),
     ([0x01], "\u{0001}"),
     ([0x02], "\u{0002}"),
@@ -13272,7 +13272,7 @@ test "python differential: GBK decode vs CPython gbk (generated)" {
 
 ///|
 test "python differential: GBK encode vs CPython gbk (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     ("\u{0000}", [0x00]),
     ("\u{0001}", [0x01]),
     ("\u{0002}", [0x02]),
@@ -13696,7 +13696,7 @@ test "python differential: GBK encode vs CPython gbk (generated)" {
 
 ///|
 test "python differential: gb18030 decode vs CPython gb18030 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x00], "\u{0000}"),
     ([0x01], "\u{0001}"),
     ([0x02], "\u{0002}"),
@@ -13930,7 +13930,7 @@ test "python differential: gb18030 decode vs CPython gb18030 (generated)" {
 
 ///|
 test "python differential: gb18030 encode vs CPython gb18030 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     ("\u{0000}", [0x00]),
     ("\u{0001}", [0x01]),
     ("\u{0002}", [0x02]),
@@ -14450,7 +14450,7 @@ test "python differential: gb18030 encode vs CPython gb18030 (generated)" {
 
 ///|
 test "python differential: Big5 decode vs CPython big5 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x00], "\u{0000}"),
     ([0x01], "\u{0001}"),
     ([0x02], "\u{0002}"),
@@ -14654,7 +14654,7 @@ test "python differential: Big5 decode vs CPython big5 (generated)" {
 
 ///|
 test "python differential: Big5 encode vs CPython big5 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     ("\u{0000}", [0x00]),
     ("\u{0001}", [0x01]),
     ("\u{0002}", [0x02]),
@@ -15116,7 +15116,7 @@ test "python differential: Big5 encode vs CPython big5 (generated)" {
 
 ///|
 test "python differential: Shift_JIS decode vs CPython shift_jis (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x00], "\u{0000}"),
     ([0x01], "\u{0001}"),
     ([0x02], "\u{0002}"),
@@ -15396,7 +15396,7 @@ test "python differential: Shift_JIS decode vs CPython shift_jis (generated)" {
 
 ///|
 test "python differential: Shift_JIS encode vs CPython shift_jis (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     ("\u{0000}", [0x00]),
     ("\u{0001}", [0x01]),
     ("\u{0002}", [0x02]),
@@ -15894,7 +15894,7 @@ test "python differential: Shift_JIS encode vs CPython shift_jis (generated)" {
 
 ///|
 test "python differential: EUC-JP decode vs CPython euc_jp (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x00], "\u{0000}"),
     ([0x01], "\u{0001}"),
     ([0x02], "\u{0002}"),
@@ -16139,7 +16139,7 @@ test "python differential: EUC-JP decode vs CPython euc_jp (generated)" {
 
 ///|
 test "python differential: EUC-JP encode vs CPython euc_jp (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     ("\u{0000}", [0x00]),
     ("\u{0001}", [0x01]),
     ("\u{0002}", [0x02]),
@@ -16402,7 +16402,7 @@ test "python differential: EUC-JP encode vs CPython euc_jp (generated)" {
 
 ///|
 test "python differential: EUC-KR decode vs CPython euc_kr (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x00], "\u{0000}"),
     ([0x01], "\u{0001}"),
     ([0x02], "\u{0002}"),
@@ -16603,7 +16603,7 @@ test "python differential: EUC-KR decode vs CPython euc_kr (generated)" {
 
 ///|
 test "python differential: EUC-KR encode vs CPython euc_kr (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     ("\u{0000}", [0x00]),
     ("\u{0001}", [0x01]),
     ("\u{0002}", [0x02]),
@@ -17008,7 +17008,7 @@ test "python differential: EUC-KR encode vs CPython euc_kr (generated)" {
 
 ///|
 test "python differential: UTF-8 decode vs CPython utf-8 (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x00], "\u{0000}"),
     ([0x01], "\u{0001}"),
     ([0x02], "\u{0002}"),
@@ -17318,7 +17318,7 @@ test "python differential: UTF-8 decode vs CPython utf-8 (generated)" {
 
 ///|
 test "python differential: UTF-8 encode vs CPython utf-8 (generated)" {
-  let vectors : Array[(String, Array[Int])] = [
+  let vectors : Array[(String, Array[Int32])] = [
     ("\u{0000}", [0x00]),
     ("\u{0001}", [0x01]),
     ("\u{0002}", [0x02]),
@@ -17470,7 +17470,7 @@ test "python differential: UTF-8 encode vs CPython utf-8 (generated)" {
 
 ///|
 test "python differential: UTF-16BE decode vs CPython utf-16-be (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0xFE, 0xFF, 0x00, 0x41], "﻿A"),
     ([0xDA, 0x09, 0xDC, 0x0D], "򒐍"),
     ([0xFE, 0xFF, 0x00, 0x41], "﻿A"),
@@ -17573,7 +17573,7 @@ test "python differential: UTF-16BE decode vs CPython utf-16-be (generated)" {
 
 ///|
 test "python differential: UTF-16LE decode vs CPython utf-16-le (generated)" {
-  let vectors : Array[(Array[Int], String)] = [
+  let vectors : Array[(Array[Int32], String)] = [
     ([0x77, 0x25], "╷"),
     ([0xDA, 0x28], "⣚"),
     ([0xFF, 0xFE, 0x41, 0x00], "﻿A"),

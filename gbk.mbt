@@ -14,9 +14,9 @@
 ///|
 /// 解码挂起状态，对应规范 gb18030 first / second / third（0 = 未占用）。
 priv struct ChineseState {
-  mut first : Int
-  mut second : Int
-  mut third : Int
+  mut first : Int32
+  mut second : Int32
+  mut third : Int32
 }
 
 ///|
@@ -39,19 +39,19 @@ fn ChineseState::reset(self : ChineseState) -> Unit {
 ///|
 /// 替换字符 U+FFFD（字面量后直接方法调用在本工具链会解析失败，故包一层）。
 fn replacement_char() -> Char {
-  let cp : Int = 0xFFFD
+  let cp : Int32 = 0xFFFD
   cp.unsafe_to_char()
 }
 
 ///|
 /// 整数 → 字节（值域 0..255，调用方保证）。
-fn int_to_byte(x : Int) -> Byte {
+fn int_to_byte(x : Int32) -> Byte {
   x.to_byte()
 }
 
 ///|
 /// 码点 → 字符（表值构造上恒为合法标量，同 single_byte.mbt 的约定）。
-fn int_to_char(cp : Int) -> Char {
+fn int_to_char(cp : Int32) -> Char {
   cp.unsafe_to_char()
 }
 
@@ -60,7 +60,7 @@ fn int_to_char(cp : Int) -> Char {
 /// - pointer 落在 (39419, 189000) 开区间或大于 1237575 → 无（此处 -1 表示错误）
 /// - pointer == 7457 → U+E7C7（规范特例，0x81 0x35 0xF4 0x37）
 /// - 否则取 ranges 中 ≤ pointer 的最后一项：cp_offset + pointer − offset
-fn ranges_code_point(pointer : Int) -> Int {
+fn ranges_code_point(pointer : Int32) -> Int32 {
   if (pointer > 39419 && pointer < 189000) || pointer > 1237575 {
     return -1
   }
@@ -90,7 +90,7 @@ fn ranges_code_point(pointer : Int) -> Int {
 /// - U+E7C7 → 7457
 /// - 否则取 ranges 中 ≤ code point 的最后一项：pointer_offset + cp − offset
 /// 返回 -1 表示无法编码（码点低于 ranges 首项，仅会出现在 ASCII 之前短路不到的场景）。
-fn ranges_pointer(code_point : Int) -> Int {
+fn ranges_pointer(code_point : Int32) -> Int32 {
   if code_point == 0xE7C7 {
     return 7457
   }
@@ -115,7 +115,7 @@ fn ranges_pointer(code_point : Int) -> Int {
 ///|
 /// 编码侧 index pointer：在「码点 → 首次 pointer」反向表上二分。
 /// 原 index 含重复且非升序，反向表由生成器按首次出现去重升序生成。
-fn gb18030_encode_pointer(code_point : Int) -> Int {
+fn gb18030_encode_pointer(code_point : Int32) -> Int32 {
   let mut lo = 0
   let mut hi = gb18030_encode_index.length() / 2 - 1
   while lo <= hi {
@@ -137,7 +137,7 @@ fn gb18030_encode_pointer(code_point : Int) -> Int {
 // （2005/2022 修订的兼容映射，形如 (码点, 字节1, 字节2)，按码点升序）。
 
 ///|
-let gbk_pua_side_table : Array[Int] = [
+let gbk_pua_side_table : Array[Int32] = [
   0xE78D, 0xA6, 0xD9, 0xE78E, 0xA6, 0xDA, 0xE78F, 0xA6, 0xDB, 0xE790, 0xA6, 0xDC,
   0xE791, 0xA6, 0xDD, 0xE792, 0xA6, 0xDE, 0xE793, 0xA6, 0xDF, 0xE794, 0xA6, 0xEC,
   0xE795, 0xA6, 0xED, 0xE796, 0xA6, 0xF3, 0xE81E, 0xFE, 0x59, 0xE826, 0xFE, 0x61,
@@ -147,14 +147,14 @@ let gbk_pua_side_table : Array[Int] = [
 
 ///|
 /// 侧表查询：命中返回 [字节1, 字节2]，未命中返回空数组。
-fn pua_side_lookup(code_point : Int) -> Array[Int] {
+fn pua_side_lookup(code_point : Int32) -> Array[Int32] {
   let mut lo = 0
   let mut hi = gbk_pua_side_table.length() / 3 - 1
   while lo <= hi {
     let mid = (lo + hi) / 2
     let cp = gbk_pua_side_table[mid * 3]
     if cp == code_point {
-      let out : Array[Int] = [
+      let out : Array[Int32] = [
         gbk_pua_side_table[mid * 3 + 1],
         gbk_pua_side_table[mid * 3 + 2],
       ]
@@ -166,7 +166,7 @@ fn pua_side_lookup(code_point : Int) -> Array[Int] {
       hi = mid - 1
     }
   }
-  let empty : Array[Int] = []
+  let empty : Array[Int32] = []
   empty
 }
 
@@ -175,8 +175,8 @@ fn pua_side_lookup(code_point : Int) -> Array[Int] {
 /// 恢复字节 ++ 剩余未消费的旧重放，消费游标归零。
 fn replay_prepend(
   replay : Array[Byte],
-  consumed : Int,
-  restored : Array[Int],
+  consumed : Int32,
+  restored : Array[Int32],
 ) -> Array[Byte] {
   let fresh : Array[Byte] = []
   for v in restored {
@@ -210,7 +210,7 @@ fn chinese_consume(state : ChineseState, input : Bytes) -> String {
     if state.third != 0 {
       if b < 0x30 || b > 0x39 {
         // Restore «second, third, byte»；三个状态归零；返回 error
-        let restored : Array[Int] = [state.second, state.third, b]
+        let restored : Array[Int32] = [state.second, state.third, b]
         replay = replay_prepend(replay, r, restored)
         r = 0
         state.reset()
@@ -233,7 +233,7 @@ fn chinese_consume(state : ChineseState, input : Bytes) -> String {
         state.third = b
       } else {
         // Restore «second, byte»；first 由 error 消化为 U+FFFD
-        let restored : Array[Int] = [state.second, b]
+        let restored : Array[Int32] = [state.second, b]
         replay = replay_prepend(replay, r, restored)
         r = 0
         state.reset()
@@ -259,7 +259,7 @@ fn chinese_consume(state : ChineseState, input : Bytes) -> String {
         } else {
           if b < 0x80 {
             // ASCII 字节恢复重放（规范：restore byte 再 error）
-            let restored : Array[Int] = [b]
+            let restored : Array[Int32] = [b]
             replay = replay_prepend(replay, r, restored)
             r = 0
           }

@@ -23,11 +23,11 @@
 /// UTF-8 解码状态：规范的 code point / bytes seen / bytes needed /
 /// lower boundary / upper boundary（初始 0 / 0 / 0 / 0x80 / 0xBF）。
 priv struct Utf8State {
-  mut code_point : Int
-  mut bytes_seen : Int
-  mut bytes_needed : Int
-  mut lower_boundary : Int
-  mut upper_boundary : Int
+  mut code_point : Int32
+  mut bytes_seen : Int32
+  mut bytes_needed : Int32
+  mut lower_boundary : Int32
+  mut upper_boundary : Int32
 }
 
 ///|
@@ -103,7 +103,7 @@ fn utf8_consume(state : Utf8State, input : Bytes) -> String {
     } else if b < state.lower_boundary || b > state.upper_boundary {
       // 非法延续字节：全状态复位、恢复该字节（它将按新鲜字节重处理）、报错
       state.reset()
-      let restored : Array[Int] = [b]
+      let restored : Array[Int32] = [b]
       replay = replay_prepend(replay, r, restored)
       r = 0
       out.push(replacement_char())
@@ -171,8 +171,8 @@ fn utf8_encode(text : String) -> Result[Bytes, EncodingError] {
 ///|
 /// 共享 UTF-16 解码状态：lead byte / lead surrogate（-1 = null）+ 字节序标志。
 priv struct Utf16State {
-  mut lead_byte : Int
-  mut lead_surrogate : Int
+  mut lead_byte : Int32
+  mut lead_surrogate : Int32
   is_be : Bool
 }
 
@@ -232,7 +232,11 @@ fn utf16_consume(state : Utf16State, input : Bytes) -> String {
       // 高代理被消化为一个 U+FFFD，当前码元随后按新鲜流程原样重处理
       let hi = unit >> 8
       let lo = unit & 0xFF
-      let restored : Array[Int] = if state.is_be { [hi, lo] } else { [lo, hi] }
+      let restored : Array[Int32] = if state.is_be {
+        [hi, lo]
+      } else {
+        [lo, hi]
+      }
       replay = replay_prepend(replay, r, restored)
       r = 0
       out.push(replacement_char())

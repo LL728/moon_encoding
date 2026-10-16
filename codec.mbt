@@ -17,7 +17,7 @@ pub enum EncodingError {
   UnsupportedEncoding(String)
   /// 编码时遇到目标编码无法表示的字符（fatal 模式）。
   /// 第一个参数是码点值，第二个是它在输入中的字符位置。
-  Unmappable(Int, Int)
+  Unmappable(Int32, Int32)
 } derive(Eq, @debug.Debug)
 
 ///|
@@ -31,7 +31,7 @@ pub extend EncodingError with @moonbitlang/core/debug.Debug::{to_repr}
 /// 解码器内部状态：单字节表驱动，或中文多字节状态机（GBK/gb18030 共用——
 /// 规范规定 GBK 的解码器就是 gb18030 的解码器）。
 enum DecoderState {
-  SingleByte(Array[Int])
+  SingleByte(Array[Int32])
   Chinese(ChineseState)
   Big5(LeadState)
   ShiftJis(LeadState)

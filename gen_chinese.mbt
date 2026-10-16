@@ -15,7 +15,7 @@ let multi_byte_names : Array[String] = [
 // index gb18030: pointer (lead-0x81)*190 + trail -> code point; -1 = error
 
 ///|
-let gb18030_index : Array[Int] = [
+let gb18030_index : Array[Int32] = [
   0x4E02, 0x4E04, 0x4E05, 0x4E06, 0x4E0F, 0x4E12, 0x4E17, 0x4E1F, 0x4E20, 0x4E21,
   0x4E23, 0x4E26, 0x4E29, 0x4E2E, 0x4E2F, 0x4E31, 0x4E33, 0x4E35, 0x4E37, 0x4E3C,
   0x4E40, 0x4E41, 0x4E42, 0x4E44, 0x4E46, 0x4E4A, 0x4E51, 0x4E55, 0x4E57, 0x4E5A,
@@ -2415,7 +2415,7 @@ let gb18030_index : Array[Int] = [
 // index gb18030 ranges: (pointer, code point) pairs, both columns ascending.
 
 ///|
-let gb18030_ranges : Array[Int] = [
+let gb18030_ranges : Array[Int32] = [
   0, 0x0080, 36, 0x00A5, 38, 0x00A9, 45, 0x00B2, 50, 0x00B8, 81, 0x00D8, 89, 0x00E2,
   95, 0x00EB, 96, 0x00EE, 100, 0x00F4, 103, 0x00F8, 104, 0x00FB, 105, 0x00FD, 109,
   0x0102, 126, 0x0114, 133, 0x011C, 148, 0x012C, 172, 0x0145, 175, 0x0149, 179, 0x014E,
@@ -2459,7 +2459,7 @@ let gb18030_ranges : Array[Int] = [
 // index pointer takes the FIRST occurrence, which this first-wins map encodes.
 
 ///|
-let gb18030_encode_index : Array[Int] = [
+let gb18030_encode_index : Array[Int32] = [
   0x00A4, 6247, 0x00A7, 6251, 0x00A8, 6182, 0x00B0, 6242, 0x00B1, 6207, 0x00B7, 6179,
   0x00D7, 6208, 0x00E0, 7509, 0x00E1, 7507, 0x00E8, 7513, 0x00E9, 7511, 0x00EA, 7531,
   0x00EC, 7517, 0x00ED, 7515, 0x00F2, 7521, 0x00F3, 7519, 0x00F7, 6209, 0x00F9, 7525,

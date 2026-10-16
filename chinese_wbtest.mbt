@@ -7,12 +7,12 @@
 // 差分向量生成器会自动把它们排除。
 
 ///|
-fn cp_str(cp : Int) -> String {
+fn cp_str(cp : Int32) -> String {
   String::from_iter([cp.unsafe_to_char()].iter())
 }
 
 ///|
-fn cps_str(cps : Array[Int]) -> String {
+fn cps_str(cps : Array[Int32]) -> String {
   let chars : Array[Char] = []
   for cp in cps {
     chars.push(cp.unsafe_to_char())

@@ -7,7 +7,7 @@
 // index Big5: pointer (lead-0x81)*157 + trail -> code point; -1 = error
 
 ///|
-let big5_index : Array[Int] = [
+let big5_index : Array[Int32] = [
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -1936,7 +1936,7 @@ let big5_index : Array[Int] = [
 // index Big5 encoder reverse: (code point, pointer); pointer >= 5024, the six spec code points use their LAST pointer
 
 ///|
-let big5_encode_index : Array[Int] = [
+let big5_encode_index : Array[Int32] = [
   0x00A7, 5103, 0x00A8, 10951, 0x00AF, 5120, 0x00B0, 5205, 0x00B1, 5137, 0x00B7,
   5040, 0x00D7, 5135, 0x00F7, 5136, 0x00F8, 11300, 0x014B, 11301, 0x0153, 11299,
   0x0250, 11295, 0x0254, 11297, 0x025B, 11296, 0x026A, 11303, 0x0275, 11298, 0x0283,
@@ -4580,7 +4580,7 @@ let big5_encode_index : Array[Int] = [
 // index jis0208 (shared EUC-JP / Shift_JIS pointer space): Shift_JIS pointer -> code point; -1 = error
 
 ///|
-let jis0208_index : Array[Int] = [
+let jis0208_index : Array[Int32] = [
   0x3000, 0x3001, 0x3002, 0xFF0C, 0xFF0E, 0x30FB, 0xFF1A, 0xFF1B, 0xFF1F, 0xFF01,
   0x309B, 0x309C, 0x00B4, 0xFF40, 0x00A8, 0xFF3E, 0xFFE3, 0xFF3F, 0x30FD, 0x30FE,
   0x309D, 0x309E, 0x3003, 0x4EDD, 0x3005, 0x3006, 0x3007, 0x30FC, 0x2015, 0x2010,
@@ -5536,7 +5536,7 @@ let jis0208_index : Array[Int] = [
 // index Shift_JIS encoder reverse: (code point, pointer); pointers 8272..8835 (NEC duplicate rows) excluded, first occurrence wins
 
 ///|
-let shift_jis_encode_index : Array[Int] = [
+let shift_jis_encode_index : Array[Int32] = [
   0x00A7, 87, 0x00A8, 14, 0x00B0, 74, 0x00B1, 61, 0x00B4, 12, 0x00B6, 182, 0x00D7,
   62, 0x00F7, 63, 0x0391, 470, 0x0392, 471, 0x0393, 472, 0x0394, 473, 0x0395, 474,
   0x0396, 475, 0x0397, 476, 0x0398, 477, 0x0399, 478, 0x039A, 479, 0x039B, 480, 0x039C,

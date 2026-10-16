@@ -17,7 +17,7 @@
 ///|
 /// EUC-JP 状态：lead + SS3 的 jis0212 标志（§euc-jp-decoder）。
 priv struct EucJpState {
-  mut lead : Int
+  mut lead : Int32
   mut jis0212 : Bool
 }
 
@@ -79,7 +79,7 @@ fn euc_jp_consume(state : EucJpState, input : Bytes) -> String {
         out.push(int_to_char(cp))
       } else {
         if b < 0x80 {
-          let restored : Array[Int] = [b]
+          let restored : Array[Int32] = [b]
           replay = replay_prepend(replay, r, restored)
           r = 0
         }
@@ -171,7 +171,7 @@ fn euc_kr_consume(state : LeadState, input : Bytes) -> String {
         out.push(int_to_char(cp))
       } else {
         if b < 0x80 {
-          let restored : Array[Int] = [b]
+          let restored : Array[Int32] = [b]
           replay = replay_prepend(replay, r, restored)
           r = 0
         }

@@ -15,7 +15,7 @@
 ///|
 /// 单挂起字节状态（Big5 lead / Shift_JIS lead，0 = 未占用）。
 priv struct LeadState {
-  mut lead : Int
+  mut lead : Int32
 }
 
 ///|
@@ -26,21 +26,21 @@ fn LeadState::new() -> LeadState {
 ///|
 /// Big5 双码点命名序列（§big5-decoder 表格，规范为规避 PUA）：
 /// (指针, 码点1, 码点2) 按指针升序，供二分。
-let big5_named_sequences : Array[Int] = [
+let big5_named_sequences : Array[Int32] = [
   1133, 0x00CA, 0x0304, 1135, 0x00CA, 0x030C, 1164, 0x00EA, 0x0304, 1166, 0x00EA,
   0x030C,
 ]
 
 ///|
 /// 命中命名序列时返回 [码点1, 码点2]，否则返回空数组。
-fn big5_sequence_lookup(pointer : Int) -> Array[Int] {
+fn big5_sequence_lookup(pointer : Int32) -> Array[Int32] {
   let mut lo = 0
   let mut hi = big5_named_sequences.length() / 3 - 1
   while lo <= hi {
     let mid = (lo + hi) / 2
     let p = big5_named_sequences[mid * 3]
     if p == pointer {
-      let out : Array[Int] = [
+      let out : Array[Int32] = [
         big5_named_sequences[mid * 3 + 1],
         big5_named_sequences[mid * 3 + 2],
       ]
@@ -52,14 +52,14 @@ fn big5_sequence_lookup(pointer : Int) -> Array[Int] {
       hi = mid - 1
     }
   }
-  let empty : Array[Int] = []
+  let empty : Array[Int32] = []
   empty
 }
 
 ///|
 /// 在 (码点, 指针) 扁平升序反向表上二分，返回指针；找不到返回 -1。
 /// Big5 / Shift_JIS / EUC-JP / EUC-KR 的编码反向表共用此查找。
-fn encode_index_lookup(encode_index : Array[Int], cp : Int) -> Int {
+fn encode_index_lookup(encode_index : Array[Int32], cp : Int32) -> Int32 {
   let mut lo = 0
   let mut hi = encode_index.length() / 2 - 1
   while lo <= hi {
@@ -115,7 +115,7 @@ fn big5_consume(state : LeadState, input : Bytes) -> String {
         }
       }
       if b < 0x80 {
-        let restored : Array[Int] = [b]
+        let restored : Array[Int32] = [b]
         replay = replay_prepend(replay, r, restored)
         r = 0
       }
@@ -206,7 +206,7 @@ fn shift_jis_consume(state : LeadState, input : Bytes) -> String {
         }
       }
       if b < 0x80 {
-        let restored : Array[Int] = [b]
+        let restored : Array[Int32] = [b]
         replay = replay_prepend(replay, r, restored)
         r = 0
       }

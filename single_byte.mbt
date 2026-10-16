@@ -9,7 +9,7 @@
 ///|
 /// 解码一个字节：0x00..0x7F 是 ASCII 直通；0x80..0xFF 查表，
 /// 表值 -1 按规范 replacement 模式输出 U+FFFD。
-fn single_byte_decode_byte(decode_table : Array[Int], b : Int) -> Int {
+fn single_byte_decode_byte(decode_table : Array[Int32], b : Int32) -> Int32 {
   if b < 0x80 {
     b
   } else {
@@ -24,7 +24,7 @@ fn single_byte_decode_byte(decode_table : Array[Int], b : Int) -> Int {
 
 ///|
 /// 解码一段字节。单字节编码没有跨块状态，任意切分结果都与整段一致。
-fn single_byte_decode(decode_table : Array[Int], input : Bytes) -> String {
+fn single_byte_decode(decode_table : Array[Int32], input : Bytes) -> String {
   let chars : Array[Char] = []
   for i in 0..<input.length() {
     let cp = single_byte_decode_byte(decode_table, input[i].to_int())
@@ -37,7 +37,7 @@ fn single_byte_decode(decode_table : Array[Int], input : Bytes) -> String {
 
 ///|
 /// 在 (码点, 字节) 扁平有序表上二分查找码点，返回字节；找不到返回 -1。
-fn rev_lookup(encode_table : Array[Int], cp : Int) -> Int {
+fn rev_lookup(encode_table : Array[Int32], cp : Int32) -> Int32 {
   let mut lo = 0
   let mut hi = encode_table.length() / 2 - 1
   while lo <= hi {
@@ -60,7 +60,7 @@ fn rev_lookup(encode_table : Array[Int], cp : Int) -> Int {
 /// 找不到映射即规范 fatal 模式（`encode or fail`）的错误，
 /// 返回不可映射的码点与它在输入中的字符位置。
 fn single_byte_encode(
-  encode_table : Array[Int],
+  encode_table : Array[Int32],
   text : String,
 ) -> Result[Bytes, EncodingError] {
   let out : Array[Byte] = []

@@ -257,7 +257,7 @@ test "EUC-KR encoder: spec has no quirks — plain index pointer" {
 
 ///|
 test "EUC-JP and EUC-KR: chunked equals whole at every split position" {
-  let cases : Array[(String, Array[Int])] = [
+  let cases : Array[(String, Array[Int32])] = [
     (
       "EUC-JP",
       [

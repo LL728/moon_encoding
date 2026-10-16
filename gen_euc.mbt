@@ -7,7 +7,7 @@
 // index jis0212 (EUC-JP SS3 / 0x8F sequences): (lead-0xA1)*94 + trail-0xA1 -> code point; -1 = error
 
 ///|
-let jis0212_index : Array[Int] = [
+let jis0212_index : Array[Int32] = [
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -758,7 +758,7 @@ let jis0212_index : Array[Int] = [
 // index EUC-KR: pointer (lead-0x81)*190 + trail-0x41 -> code point; -1 = error
 
 ///|
-let euc_kr_index : Array[Int] = [
+let euc_kr_index : Array[Int32] = [
   0xAC02, 0xAC03, 0xAC05, 0xAC06, 0xAC0B, 0xAC0C, 0xAC0D, 0xAC0E, 0xAC0F, 0xAC18,
   0xAC1E, 0xAC1F, 0xAC21, 0xAC22, 0xAC23, 0xAC25, 0xAC26, 0xAC27, 0xAC28, 0xAC29,
   0xAC2A, 0xAC2B, 0xAC2E, 0xAC32, 0xAC33, 0xAC34, -1, -1, -1, -1, -1, -1, 0xAC35,
@@ -2813,7 +2813,7 @@ let euc_kr_index : Array[Int] = [
 // index EUC-KR encoder reverse: (code point, pointer); no duplicate code points in the index
 
 ///|
-let euc_kr_encode_index : Array[Int] = [
+let euc_kr_encode_index : Array[Int32] = [
   0x00A1, 6379, 0x00A4, 6385, 0x00A7, 6230, 0x00A8, 6182, 0x00AA, 7508, 0x00AD, 6184,
   0x00AE, 6436, 0x00B0, 6213, 0x00B1, 6205, 0x00B2, 7782, 0x00B3, 7783, 0x00B4, 6370,
   0x00B6, 6415, 0x00B7, 6179, 0x00B8, 6377, 0x00B9, 7781, 0x00BA, 7517, 0x00BC, 7594,
@@ -5781,7 +5781,7 @@ let euc_kr_encode_index : Array[Int] = [
 // index jis0208 encoder reverse for EUC-JP: (code point, pointer), first occurrence; all pointers < 8836 per the spec's note (asserted at generation time). Differs from the Shift_JIS map, which excludes pointers 8272..8835
 
 ///|
-let euc_jp_encode_index : Array[Int] = [
+let euc_jp_encode_index : Array[Int32] = [
   0x00A7, 87, 0x00A8, 14, 0x00B0, 74, 0x00B1, 61, 0x00B4, 12, 0x00B6, 182, 0x00D7,
   62, 0x00F7, 63, 0x0391, 470, 0x0392, 471, 0x0393, 472, 0x0394, 473, 0x0395, 474,
   0x0396, 475, 0x0397, 476, 0x0398, 477, 0x0399, 478, 0x039A, 479, 0x039B, 480, 0x039C,

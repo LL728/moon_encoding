@@ -5,7 +5,7 @@
 
 ///|
 /// 从 Int 数组构造 Bytes（测试辅助）。
-fn bytes_of_ints(arr : Array[Int]) -> Bytes {
+fn bytes_of_ints(arr : Array[Int32]) -> Bytes {
   let bytes : Array[Byte] = []
   for i in 0..<arr.length() {
     bytes.push(arr[i].to_byte())
@@ -15,7 +15,7 @@ fn bytes_of_ints(arr : Array[Int]) -> Bytes {
 
 ///|
 /// 取 [lo, hi) 字节切片（测试辅助，流式切分用）。
-fn slice_bytes(input : Bytes, lo : Int, hi : Int) -> Bytes {
+fn slice_bytes(input : Bytes, lo : Int32, hi : Int32) -> Bytes {
   let bytes : Array[Byte] = []
   for i in lo..<hi {
     bytes.push(input[i])
@@ -165,7 +165,7 @@ test "all single-byte encodings: rev_lookup agrees with every encode-table entry
 test "all single-byte encodings: decode-error bytes output U+FFFD (replacement)" {
   // 28 张表共 150 个 index null 位（ISO-8859-8/-8-I 共用同一索引各计一次），
   // 这些位置是 replacement 语义的真实覆盖。
-  let replacement_cp : Int = 0xFFFD
+  let replacement_cp : Int32 = 0xFFFD
   let replacement = String::from_iter([replacement_cp.unsafe_to_char()].iter())
   let mut error_bytes = 0
   for k in 0..<single_byte_names.length() {
