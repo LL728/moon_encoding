@@ -13,7 +13,8 @@
 pub enum EncodingError {
   /// label 不在 WHATWG Encoding Standard 定义的 228 个 label 之内。
   UnknownLabel(String)
-  /// label 合法，但该编码尚未实现——本项目按里程碑逐步补齐，见 README 的覆盖范围。
+  /// label 合法，但该编码**规范未定义编码器**（replacement / UTF-16BE / UTF-16LE，
+  /// 见 §get an encoder 的断言）或本构建尚未接线——两者都如实报出而不静默失败。
   UnsupportedEncoding(String)
   /// 编码时遇到目标编码无法表示的字符（fatal 模式）。
   /// 第一个参数是码点值，第二个是它在输入中的字符位置。
@@ -28,8 +29,9 @@ pub extend EncodingError with Eq::{not_equal, equal}
 pub extend EncodingError with @moonbitlang/core/debug.Debug::{to_repr}
 
 ///|
-/// 解码器内部状态：单字节表驱动，或中文多字节状态机（GBK/gb18030 共用——
-/// 规范规定 GBK 的解码器就是 gb18030 的解码器）。
+/// 解码器内部状态：单字节表驱动（x-user-defined 也合成一张表走这条通路）、
+/// 中文多字节状态机（GBK/gb18030 共用——规范规定 GBK 的解码器就是 gb18030 的
+/// 解码器）、日文/韩文状态机、UTF 状态机，以及 replacement 的一次性错误状态。
 enum DecoderState {
   SingleByte(Array[Int32])
   Chinese(ChineseState)
@@ -37,6 +39,8 @@ enum DecoderState {
   ShiftJis(LeadState)
   EucJp(EucJpState)
   EucKr(LeadState)
+  Iso2022Jp(Iso2022JpState)
+  Replacement(ReplacementState)
   Utf8(Utf8State)
   Utf16(Utf16State)
 }
@@ -50,7 +54,8 @@ pub struct Decoder {
 
 ///|
 /// 由 WHATWG label 构造解码器（ASCII 大小写不敏感）。
-/// label 合法但尚未实现的编码返回 `UnsupportedEncoding`。
+/// 规范的 40 种编码都有解码器，故这里全部可构造；末尾的 `UnsupportedEncoding`
+/// 分支只作为防御（label 表与接线漂移时如实报错，而不是静默失败）。
 pub fn Decoder::new(label : String) -> Result[Decoder, EncodingError] {
   match label_to_encoding(label) {
     Err(e) => Err(e)
@@ -94,6 +99,26 @@ pub fn Decoder::new(label : String) -> Result[Decoder, EncodingError] {
               }
               Ok(decoder)
             }
+            "ISO-2022-JP" => {
+              let decoder : Decoder = {
+                state: DecoderState::Iso2022Jp(Iso2022JpState::new()),
+              }
+              Ok(decoder)
+            }
+            // 规范没有 x-user-defined 的索引表（纯算法），故合成一张无空位的
+            // 单字节表走既有引擎；replacement 只带"是否已报过 error"两个布尔量。
+            "x-user-defined" => {
+              let decoder : Decoder = {
+                state: DecoderState::SingleByte(x_user_defined_decode_table()),
+              }
+              Ok(decoder)
+            }
+            "replacement" => {
+              let decoder : Decoder = {
+                state: DecoderState::Replacement(ReplacementState::new()),
+              }
+              Ok(decoder)
+            }
             "UTF-8" => {
               let decoder : Decoder = {
                 state: DecoderState::Utf8(Utf8State::new()),
@@ -129,6 +154,8 @@ pub fn Decoder::consume(self : Decoder, chunk : Bytes) -> String {
     DecoderState::ShiftJis(state) => shift_jis_consume(state, chunk)
     DecoderState::EucJp(state) => euc_jp_consume(state, chunk)
     DecoderState::EucKr(state) => euc_kr_consume(state, chunk)
+    DecoderState::Iso2022Jp(state) => iso2022_jp_consume(state, chunk)
+    DecoderState::Replacement(state) => replacement_decode(state, chunk)
     DecoderState::Utf8(state) => utf8_consume(state, chunk)
     DecoderState::Utf16(state) => utf16_consume(state, chunk)
   }
@@ -145,6 +172,8 @@ pub fn Decoder::finish(self : Decoder) -> String {
     DecoderState::ShiftJis(state) => shift_jis_finish(state)
     DecoderState::EucJp(state) => euc_jp_finish(state)
     DecoderState::EucKr(state) => euc_kr_finish(state)
+    DecoderState::Iso2022Jp(state) => iso2022_jp_finish(state)
+    DecoderState::Replacement(state) => replacement_finish(state)
     DecoderState::Utf8(state) => utf8_finish(state)
     DecoderState::Utf16(state) => utf16_finish(state)
   }
@@ -198,10 +227,13 @@ pub fn encode(text : String, label : String) -> Result[Bytes, EncodingError] {
             "Shift_JIS" => shift_jis_encode(text)
             "EUC-JP" => euc_jp_encode(text)
             "EUC-KR" => euc_kr_encode(text)
+            "ISO-2022-JP" => iso2022_jp_encode(text)
+            "x-user-defined" =>
+              single_byte_encode(x_user_defined_encode_table(), text)
             "UTF-8" => utf8_encode(text)
             // 规范 §get an encoder 断言 encoding 不是 replacement 或
-            // UTF-16BE/LE——WHATWG 不定义 UTF-16 编码器，此处如实报未支持。
-            "UTF-16BE" | "UTF-16LE" =>
+            // UTF-16BE/LE——WHATWG 不定义它们的编码器，此处如实报未支持。
+            "replacement" | "UTF-16BE" | "UTF-16LE" =>
               Err(EncodingError::UnsupportedEncoding(encoding))
             _ => Err(EncodingError::UnsupportedEncoding(encoding))
           }

@@ -5778,7 +5778,7 @@ let euc_kr_encode_index : Array[Int32] = [
   6218, 0xFFE1, 6219, 0xFFE2, 6269, 0xFFE3, 6649, 0xFFE5, 6220, 0xFFE6, 6615,
 ]
 
-// index jis0208 encoder reverse for EUC-JP: (code point, pointer), first occurrence; all pointers < 8836 per the spec's note (asserted at generation time). Differs from the Shift_JIS map, which excludes pointers 8272..8835
+// index jis0208 encoder reverse: (code point, pointer), first occurrence; all pointers < 8836 per the spec's note (asserted at generation time). Shared by the EUC-JP and ISO-2022-JP encoders — §euc-jp-encoder and §iso-2022-jp-encoder both say 'the index pointer for codePoint in index jis0208', so one table serves both
 
 ///|
 let euc_jp_encode_index : Array[Int32] = [

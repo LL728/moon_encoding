@@ -36,7 +36,7 @@ fn usage() -> Unit {
 
 ///|
 /// list：打印 supported_encodings() 的规范名（顺序即接线顺序：单字节 28 种
-/// 在前、多字节与 UTF 9 种在后）。
+/// 在前、多字节与 UTF/杂项 12 种在后）。
 fn list_encodings() -> Unit {
   let names = @moon_encoding.supported_encodings()
   println("支持 \{names.length()} 种编码（WHATWG 规范名）:")

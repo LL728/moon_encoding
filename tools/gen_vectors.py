@@ -109,6 +109,19 @@ def load():
     return list(group["encodings"]), indexes
 
 
+def load_all_label_pairs():
+    """Every (label, canonical encoding name) pair of the standard, in
+    encodings.json order: the full 228-label surface, not just the
+    single-byte group."""
+    encodings = json.loads((DATA / "encodings.json").read_text(encoding="utf-8"))
+    return [
+        (label, enc["name"])
+        for heading in encodings
+        for enc in heading["encodings"]
+        for label in enc["labels"]
+    ]
+
+
 def py_codec(name: str) -> str:
     if name in PY_CODEC:
         return PY_CODEC[name]
@@ -150,12 +163,18 @@ def classify(index, codec: str):
 
 def main() -> None:
     encs, indexes = load()
+    all_label_pairs = load_all_label_pairs()
+    n_encodings = len({canonical for _, canonical in all_label_pairs})
+    if len(all_label_pairs) != 228 or n_encodings != 40:
+        sys.exit(
+            f"expected 228 labels over 40 encodings, got "
+            f"{len(all_label_pairs)} over {n_encodings}"
+        )
     rng = random.Random(SEED)
 
     per_encoding_stats = []
     decode_tests = []  # (name, [(bytes, expected)...])
     encode_tests = []  # (name, [(text, bytes)...])
-    label_pairs = []
 
     ascii_bytes = list(range(0x20, 0x7F))
     ascii_text = "".join(chr(b) for b in ascii_bytes)
@@ -169,9 +188,6 @@ def main() -> None:
         index = indexes[key]
         clean, both_error, divergent = classify(index, codec)
         per_encoding_stats.append((name, len(clean), len(both_error), len(divergent)))
-
-        label_pairs.append((name, name))  # canonical name folds to its own label
-        label_pairs.append((enc["labels"][0], name))
 
         # ---- decode vectors ------------------------------------------------
         pool = clean + ascii_bytes
@@ -265,14 +281,49 @@ def main() -> None:
         lines.append("}")
         lines.append("")
 
-    lines.append('test "labels: single-byte names and first labels resolve (generated)" {')
+    lines.append('test "labels: every WHATWG label resolves and works end-to-end (generated)" {')
     lines.append("  let pairs : Array[(String, String)] = [")
-    for label, canonical in label_pairs:
+    for label, canonical in all_label_pairs:
         lines.append(f"    ({moon_string(label)}, {moon_string(canonical)}),")
     lines.append("  ]")
+    lines.append("  // 228 个 label / 40 种编码，逐条来自 vendor 的 encodings.json")
+    lines.append("  @test.assert_eq(pairs.length(), 228)")
     lines.append("  for i in 0..<pairs.length() {")
     lines.append("    let (label, canonical) = pairs[i]")
     lines.append("    @test.assert_eq(label_to_encoding(label), Ok(canonical))")
+    lines.append("    // 解码器全部可构造，且真的能解出一段字节")
+    lines.append("    match decode(bytes_of_ints([0x61]), label) {")
+    lines.append("      Ok(_) => ()")
+    lines.append(
+        "      Err(e) => abort(\"decode failed for \" + label + \": \" + @debug.to_string(e))"
+    )
+    lines.append("    }")
+    lines.append("    // 编码方向：规范未定义编码器的三种（replacement / UTF-16BE /")
+    lines.append("    // UTF-16LE）必须如实报 UnsupportedEncoding，其余必须可编码")
+    lines.append(
+        "    let no_encoder = canonical == \"replacement\" || canonical == \"UTF-16BE\" || canonical == \"UTF-16LE\""
+    )
+    lines.append("    match encode(\"a\", label) {")
+    lines.append("      Ok(_) => @test.assert_eq(no_encoder, false)")
+    lines.append("      Err(EncodingError::UnsupportedEncoding(_)) =>")
+    lines.append("        @test.assert_eq(no_encoder, true)")
+    lines.append(
+        "      Err(e) => abort(\"encode failed for \" + label + \": \" + @debug.to_string(e))"
+    )
+    lines.append("    }")
+    lines.append("  }")
+    lines.append("  // supported_encodings() 的每个规范名都能经 label 解析到达")
+    lines.append("  let names = supported_encodings()")
+    lines.append("  @test.assert_eq(names.length(), 40)")
+    lines.append("  for n in names {")
+    lines.append("    let mut reachable = false")
+    lines.append("    for i in 0..<pairs.length() {")
+    lines.append("      let (_label, canonical) = pairs[i]")
+    lines.append("      if canonical == n {")
+    lines.append("        reachable = true")
+    lines.append("      }")
+    lines.append("    }")
+    lines.append("    @test.assert_eq(reachable, true)")
     lines.append("  }")
     lines.append("}")
     lines.append("")
@@ -387,7 +438,7 @@ def main() -> None:
     print(
         f"wrote {out.name}: {len(decode_tests)} decode suites ({n_dec} vectors), "
         f"{len(encode_tests)} encode suites ({n_enc} vectors), "
-        f"{len(label_pairs)} label pairs"
+        f"{len(all_label_pairs)} label pairs over {n_encodings} encodings"
     )
 
 

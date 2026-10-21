@@ -59,12 +59,15 @@ MISC_GROUP = "Legacy miscellaneous encodings"
 # are only emitted for wired names, so unsupported encodings never leave
 # unused tables behind (deny-warn would flag them).
 # Everything wired beyond the single-byte group: six legacy multi-byte
-# encodings plus the three UTF encodings (UTF-8's group is "The Encoding";
-# UTF-16BE/LE live in the miscellaneous group alongside the cut-scope
-# replacement / x-user-defined).
+# encodings, ISO-2022-JP, the three UTF encodings (UTF-8's group is "The
+# Encoding"), and the two algorithmic miscellaneous encodings (replacement /
+# x-user-defined need no index table, but they are wired here so that
+# multi_byte_names — and therefore supported_encodings() — stays in lockstep
+# with the encodings the package actually accepts).
 MULTI_BYTE_WIRED = [
     "GBK", "gb18030", "Big5", "Shift_JIS", "EUC-JP", "EUC-KR",
-    "UTF-8", "UTF-16BE", "UTF-16LE",
+    "ISO-2022-JP", "UTF-8", "UTF-16BE", "UTF-16LE",
+    "replacement", "x-user-defined",
 ]
 
 # Encoding name -> indexes.json key, where they differ. ISO-8859-8-I shares
@@ -110,9 +113,12 @@ def gen_chinese(encodings, indexes) -> str:
         "Shift_JIS": JAPANESE_GROUP,
         "EUC-JP": JAPANESE_GROUP,
         "EUC-KR": KOREAN_GROUP,
+        "ISO-2022-JP": JAPANESE_GROUP,
         "UTF-8": THE_ENCODING_GROUP,
         "UTF-16BE": MISC_GROUP,
         "UTF-16LE": MISC_GROUP,
+        "replacement": MISC_GROUP,
+        "x-user-defined": MISC_GROUP,
     }
     by_group = {h["heading"]: [e["name"] for e in h["encodings"]] for h in encodings}
     for name in MULTI_BYTE_WIRED:
@@ -443,14 +449,52 @@ def gen_euc(indexes) -> str:
         per_line=8,
     )
     emit(
-        "index jis0208 encoder reverse for EUC-JP: (code point, pointer), first "
-        "occurrence; all pointers < 8836 per the spec's note (asserted at "
-        "generation time). Differs from the Shift_JIS map, which excludes "
-        "pointers 8272..8835",
+        "index jis0208 encoder reverse: (code point, pointer), first occurrence; "
+        "all pointers < 8836 per the spec's note (asserted at generation time). "
+        "Shared by the EUC-JP and ISO-2022-JP encoders — §euc-jp-encoder and "
+        "§iso-2022-jp-encoder both say 'the index pointer for codePoint in index "
+        "jis0208', so one table serves both",
         "euc_jp_encode_index",
         flatten_pairs(euc_jp_enc),
         per_line=8,
     )
+    return "\n".join(parts)
+
+
+def gen_iso2022(indexes) -> str:
+    """Table for the ISO-2022-JP encoder (encoding.bs §iso-2022-jp-encoder).
+
+    index ISO-2022-JP katakana maps halfwidth katakana U+FF61..U+FF9F to the
+    fullwidth form Unicode NFKC would produce. It is ENCODER-ONLY: the
+    decoder's katakana state computes 0xFF61 - 0x21 + byte and consults no
+    index at all. The jis0208 reverse map the encoder also needs is the same
+    spec operation as EUC-JP's, so it is emitted once in gen_euc.mbt as
+    euc_jp_encode_index and reused there.
+    """
+    katakana = indexes["iso-2022-jp-katakana"]
+    if len(katakana) != 63:
+        sys.exit(
+            f"iso-2022-jp-katakana index: expected 63 entries, got {len(katakana)}"
+        )
+    if any(cp is None for cp in katakana):
+        # §iso-2022-jp-encoder step 9 says "set it to the index code point",
+        # i.e. no null handling is specified; the vendored data has none.
+        sys.exit("iso-2022-jp-katakana index contains null entries")
+
+    parts = [HEADER]
+    print(f"gen_iso2022: katakana={len(katakana)} entries (no nulls)")
+    parts.append(
+        "// index ISO-2022-JP katakana (encoder only): U+FF61 + i -> fullwidth form."
+    )
+    parts.append(
+        "// The decoder's katakana state does NOT use this: it computes "
+        "0xFF61 - 0x21 + byte."
+    )
+    parts.append("")
+    parts.append("///|")
+    parts.append("let iso2022_jp_katakana_index : Array[Int] =")
+    parts.append(fmt_array(["0x%04X" % cp for cp in katakana], per_line=12))
+    parts.append("")
     return "\n".join(parts)
 
 
@@ -469,9 +513,12 @@ def main():
     (ROOT / "gen_euc.mbt").write_text(
         gen_euc(indexes), encoding="utf-8", newline="\n"
     )
+    (ROOT / "gen_iso2022.mbt").write_text(
+        gen_iso2022(indexes), encoding="utf-8", newline="\n"
+    )
     print(
         "wrote gen_label.mbt, gen_single_byte.mbt, gen_chinese.mbt, "
-        "gen_big5_sjis.mbt, gen_euc.mbt"
+        "gen_big5_sjis.mbt, gen_euc.mbt, gen_iso2022.mbt"
     )
 
 

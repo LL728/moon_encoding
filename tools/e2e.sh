@@ -37,13 +37,6 @@ if moon run cmd/main --target wasm-gc -- decode no-such-label \
   echo "expected failure for unknown label"; exit 1
 fi
 
-# 合法但未实现的编码 -> 非零退出且消息可读
-if moon run cmd/main --target wasm-gc -- decode iso-2022-jp \
-  "$T/in.bin" "$T/x.txt" > "$T/e.txt"; then
-  echo "expected failure for unimplemented encoding"; exit 1
-fi
-grep -q 'UnsupportedEncoding("ISO-2022-JP")' "$T/e.txt"
-
 # 不可映射字符 -> 非零退出且报出码点与位置
 printf '中文' > "$T/zh.txt"
 if moon run cmd/main --target wasm-gc -- encode windows-1252 \
@@ -156,6 +149,43 @@ moon run cmd/main --target wasm-gc -- decode utf-16be \
   "$T/u16be.bin" "$T/u16be.txt"
 "$PY" -c 'import sys; b = open(sys.argv[1], "rb").read(); assert b.hex() == "e4b8ad41", b.hex()' "$T/u16be.txt"
 
+# iso-2022-jp 端到端：日本語（ESC $ B ... ESC ( B）双向，label 别名同样可用
+printf '\x1b\x24\x42\x46\x7c\x4b\x5c\x38\x6c\x1b\x28\x42' > "$T/ja2022.bin"
+moon run cmd/main --target wasm-gc -- decode iso-2022-jp \
+  "$T/ja2022.bin" "$T/ja2022.txt"
+"$PY" -c 'import sys; b = open(sys.argv[1], "rb").read(); assert b.hex() == "e697a5e69cace8aa9e", b.hex()' "$T/ja2022.txt"
+moon run cmd/main --target wasm-gc -- encode csiso2022jp \
+  "$T/ja2022.txt" "$T/ja2022b.bin"
+cmp "$T/ja2022.bin" "$T/ja2022b.bin"
+
+# iso-2022-jp 的 ESC ( I（katakana）状态：U+FF61 / U+FF9F
+printf '\x1b\x28\x49\x21\x5f' > "$T/kata2022.bin"
+moon run cmd/main --target wasm-gc -- decode iso-2022-jp \
+  "$T/kata2022.bin" "$T/kata2022.txt"
+"$PY" -c 'import sys; b = open(sys.argv[1], "rb").read(); assert b.hex() == "efbda1efbe9f", b.hex()' "$T/kata2022.txt"
+
+# x-user-defined 端到端：0x41 恒等、0x80/0xFF → U+F780/U+F7FF，可编码回原字节
+printf '\x41\x80\xff' > "$T/xud.bin"
+moon run cmd/main --target wasm-gc -- decode x-user-defined \
+  "$T/xud.bin" "$T/xud.txt"
+"$PY" -c 'import sys; b = open(sys.argv[1], "rb").read(); assert b.hex() == "41ef9e80ef9fbf", b.hex()' "$T/xud.txt"
+moon run cmd/main --target wasm-gc -- encode x-user-defined \
+  "$T/xud.txt" "$T/xud2.bin"
+cmp "$T/xud.bin" "$T/xud2.bin"
+
+# replacement 解码：至多报一次 error -> 恰好一个 U+FFFD，其余字节不再处理
+#（6 个 label 之一 hz-gb-2312 走同一通路）
+printf '\x41\x42\x43' > "$T/rep.bin"
+moon run cmd/main --target wasm-gc -- decode hz-gb-2312 \
+  "$T/rep.bin" "$T/rep.txt"
+"$PY" -c 'import sys; b = open(sys.argv[1], "rb").read(); assert b.hex() == "efbfbd", b.hex()' "$T/rep.txt"
+# 规范不定义 replacement 编码器 -> 非零退出且消息可读
+if moon run cmd/main --target wasm-gc -- encode replacement \
+  "$T/rep.txt" "$T/rep2.bin" > "$T/e.txt"; then
+  echo "expected failure: spec defines no replacement encoder"; exit 1
+fi
+grep -q 'UnsupportedEncoding("replacement")' "$T/e.txt"
+
 # 规范不定义 UTF-16 编码器 -> 非零退出且消息可读
 if moon run cmd/main --target wasm-gc -- encode utf-16le \
   "$T/u16le.txt" "$T/u16le.bin" > "$T/e.txt"; then
@@ -163,9 +193,12 @@ if moon run cmd/main --target wasm-gc -- encode utf-16le \
 fi
 grep -q 'UnsupportedEncoding("UTF-16LE")' "$T/e.txt"
 
-# list：37 种编码清单（F7a）
+# list：40 种编码清单（WHATWG 规范全集）
 moon run cmd/main --target wasm-gc -- list > "$T/list.txt"
-grep -q "支持 37 种编码" "$T/list.txt"
+grep -q "支持 40 种编码" "$T/list.txt"
 grep -q "Shift_JIS" "$T/list.txt"
 grep -q "UTF-16LE" "$T/list.txt"
+grep -q "ISO-2022-JP" "$T/list.txt"
+grep -q "replacement" "$T/list.txt"
+grep -q "x-user-defined" "$T/list.txt"
 echo "E2E_ALL_PASS"

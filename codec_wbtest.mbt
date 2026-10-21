@@ -33,20 +33,17 @@ test "decode: empty input decodes to empty output" {
 }
 
 ///|
-test "decode: unknown label and valid-but-unimplemented encoding are distinct errors" {
+test "decode: unknown label is rejected, every valid label decodes" {
   let input = bytes_of_ints([0x41])
   @test.assert_eq(
     decode(input, "no-such-label"),
     Err(EncodingError::UnknownLabel("no-such-label")),
   )
-  // GBK/gb18030/Big5/Shift_JIS/EUC-JP/EUC-KR 已接线；换一个合法但尚未接线的编码
-  //（ISO-2022-JP 是四模式转义状态机，属独立里程碑）验证两类错误可区分
-  match decode(input, "iso-2022-jp") {
-    Err(EncodingError::UnsupportedEncoding(name)) =>
-      @test.assert_eq(name, "ISO-2022-JP")
-    other =>
-      abort("expected UnsupportedEncoding, got " + @debug.to_string(other))
-  }
+  // 40 种编码全部接线后，规范的每个 label 都能构造出解码器；
+  // 曾经用作"合法但未实现"样本的三个编码现在都真的能解出内容
+  @test.assert_eq(decode(input, "iso-2022-jp"), Ok("A"))
+  @test.assert_eq(decode(input, "x-user-defined"), Ok("A"))
+  @test.assert_eq(decode(input, "replacement"), Ok(replacement_str()))
 }
 
 ///|
@@ -90,18 +87,22 @@ test "encode: unmappable characters fail with code point and position (fatal mod
 }
 
 ///|
-test "encode: unknown label and unimplemented encodings are distinct errors" {
+test "encode: unknown label and spec-without-encoder are distinct errors" {
   match encode("x", "no-such-label") {
     Err(EncodingError::UnknownLabel(l)) => @test.assert_eq(l, "no-such-label")
     other => abort("expected UnknownLabel, got " + @debug.to_string(other))
   }
-  // UTF-8 已可编码；用仍未接线的 ISO-2022-JP（四模式转义状态机）验证
-  match encode("x", "iso-2022-jp") {
-    Err(EncodingError::UnsupportedEncoding(name)) =>
-      @test.assert_eq(name, "ISO-2022-JP")
-    other =>
-      abort("expected UnsupportedEncoding, got " + @debug.to_string(other))
-  }
+  // 规范 §get an encoder 不定义 replacement 与 UTF-16BE/LE 的编码器
+  @test.assert_eq(
+    encode("x", "replacement"),
+    Err(EncodingError::UnsupportedEncoding("replacement")),
+  )
+  @test.assert_eq(
+    encode("x", "utf-16le"),
+    Err(EncodingError::UnsupportedEncoding("UTF-16LE")),
+  )
+  // ISO-2022-JP 现在可编码（曾经也是"未实现"样本）
+  @test.assert_eq(encode("x", "iso-2022-jp"), Ok(bytes_of_ints([0x78])))
 }
 
 ///|
