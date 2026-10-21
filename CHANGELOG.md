@@ -3,7 +3,7 @@
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循[语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [未发布]
+## [0.2.0] - 2026-10-21
 
 ### 新增
 - **ISO-2022-JP** 完整编解码：规范 §iso-2022-jp-decoder 的 **7 个状态**
@@ -109,13 +109,13 @@
   截断单 U+FFFD；共享 UTF-16 的字节序标志、孤立低代理报错、未配对高代理时
   **恢复当前码元两字节**（字符不丢）、end-of-queue 单 U+FFFD；
   `supported_encodings()` 达 **37 种**（当时 ISO-2022-JP/replacement/x-user-defined
-  三个可裁剪项尚未接线；三者已在 [未发布] 补齐至 40 种）
+  三个可裁剪项尚未接线；三者已在 [0.2.0] 补齐至 40 种）
 - **规范不定义 UTF-16 编码器**（`§get an encoder` 断言）：encode(utf-16*) 如实返回
   UnsupportedEncoding，由单测与 CI 端到端共同钉住
 - UTF 差分向量：`tools/utf_ref.py`——UTF-8 203+139（0 分歧）、UTF-16BE 87、
   UTF-16LE 80 解码向量（各三百余次 CPython strict 报错跳过：孤立代理/奇数长度/非法序列）
 - 文件转码 CLI：`decode` / `encode` / `list` 子命令，失败非零退出并打印原因；
-  `list` 输出 `supported_encodings()` 的 37 个规范名（当时值；现为 40，见 [未发布]）
+  `list` 输出 `supported_encodings()` 的 37 个规范名（当时值；现为 40，见 [0.2.0]）
 - 演示：`tools/make_demo.py` 把**真实执行**的命令流程渲染为
   `docs/demo.gif`（136 帧 / 10.5 秒，内置自检：期望不符即失败），
   并同步生成文字实录 `docs/demo_transcript.txt`（完整输出 + 退出码、路径脱敏、
