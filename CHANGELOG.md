@@ -5,6 +5,44 @@
 
 ## [未发布]
 
+### 新增
+- **ISO-2022-JP** 完整编解码：规范 §iso-2022-jp-decoder 的 **7 个状态**
+  （ASCII / Roman / katakana / Leading byte / Trailing byte / Escape start / Escape）
+  与 **4 个关联变量**（decoder state、decoder output state、leading、output 布尔量）
+  逐条实现——5 条转义序列（`ESC ( B` / `ESC ( J` / `ESC ( I` / `ESC $ @` / `ESC $ B`）、
+  katakana 状态**不查索引**（`0xFF61 − 0x21 + byte`）、Trailing byte 的非法第二字节
+  **被吞掉不回退**（对比 EUC-JP 会回放 ASCII 字节）、7 种状态各自的 end-of-queue 行为、
+  编码器的 `U+000E/U+000F/U+001B → error with U+FFFD`、`U+2212 → U+FF0D`、
+  半角片假名经 `index ISO-2022-JP katakana` 转全角后再查 jis0208、
+  以及规范自己的"连续转义产生一个 error"注记（¥ 编码两次拼接解码得 ¥ U+FFFD ¥）
+- **跨块状态**：转义序列、双字节字符、ESC 都可在任意位置被切开；状态保存在解码器实例上，
+  每个切分点（含 0 与 n）+ 1200 组随机多切分均与一次性 `decode()` 一致
+- **replacement** 解码：按 §14.1.1 的 `replacement error returned` 布尔量，
+  至多报一次 error 后立刻 finished——非空输入**恰好一个 U+FFFD**（与长度无关，
+  其余字节不再处理），空输入为空串；6 个 label 全部可达
+- **x-user-defined** 编解码：`0x00..0x7F` 恒等、`0x80..0xFF → U+F780 + byte − 0x80`，
+  反向同理；规范无索引表（算法定义），故复用单字节引擎 + 合成表
+- `supported_encodings()` 达 **40 种**（规范全集）；228 个 label 的端到端生成套件
+  （逐个解析 + 解码器可构造 + 编码可达性）
+- 生成物新增 `gen_iso2022.mbt`（`index ISO-2022-JP katakana` 63 项，编码器专用）；
+  ISO-2022-JP 编码反向表与 EUC-JP 共用同一条规范操作（`index pointer in index jis0208`），
+  故复用 `gen_euc.mbt` 的 `euc_jp_encode_index`，不重复出表
+- 新的规范级单测 `iso2022_wbtest.mbt` / `misc_wbtest.mbt`，测试数 147 → 165
+
+### 变更
+- `EncodingError::UnsupportedEncoding` 的语义收敛为"label 合法但**规范未定义编码器**"
+  （`replacement` / `UTF-16BE` / `UTF-16LE`）；40 种编码现在都有解码器
+- `tools/e2e.sh`：删除"合法但未实现编码"的过期用例（已被 ISO-2022-JP 实现取代），
+  改为 iso-2022-jp（含 `ESC ( I` 与 label 别名 `csiso2022jp`）、x-user-defined、
+  replacement（`hz-gb-2312` 标签 + 至多一个 U+FFFD + 无编码器拒绝）的端到端用例，
+  list 断言 37 → 40 并覆盖三个新编码名
+- README / 演示脚本同步到 40 种编码（`tools/make_demo.py` 的自检与 `docs/` 演示产物）
+
+### 说明
+- `ISO-2022-JP` / `replacement` / `x-user-defined` **不进入 CPython 差分向量**：
+  CPython 的 `iso2022_jp` 在 `ESC ( I`、`0x0E/0x0F`、半角片假名、转义后回 ASCII
+  等处与规范系统性分歧，按"规范优先"原则改由规范级单测钉住
+
 ## [0.1.2] - 2026-10-16
 
 ### 新增
@@ -70,14 +108,14 @@
   E0→A0、ED→9F、F0→90、F4→8F）、非法延续字节的**全状态复位 + 重放**、
   截断单 U+FFFD；共享 UTF-16 的字节序标志、孤立低代理报错、未配对高代理时
   **恢复当前码元两字节**（字符不丢）、end-of-queue 单 U+FFFD；
-  `supported_encodings()` 达 **37 种**（除 ISO-2022-JP/replacement/x-user-defined
-  三个可裁剪项外全部接线）
+  `supported_encodings()` 达 **37 种**（当时 ISO-2022-JP/replacement/x-user-defined
+  三个可裁剪项尚未接线；三者已在 [未发布] 补齐至 40 种）
 - **规范不定义 UTF-16 编码器**（`§get an encoder` 断言）：encode(utf-16*) 如实返回
   UnsupportedEncoding，由单测与 CI 端到端共同钉住
 - UTF 差分向量：`tools/utf_ref.py`——UTF-8 203+139（0 分歧）、UTF-16BE 87、
   UTF-16LE 80 解码向量（各三百余次 CPython strict 报错跳过：孤立代理/奇数长度/非法序列）
 - 文件转码 CLI：`decode` / `encode` / `list` 子命令，失败非零退出并打印原因；
-  `list` 输出 `supported_encodings()` 的 37 个规范名（CI 断言行数与关键项）
+  `list` 输出 `supported_encodings()` 的 37 个规范名（当时值；现为 40，见 [未发布]）
 - 演示：`tools/make_demo.py` 把**真实执行**的命令流程渲染为
   `docs/demo.gif`（136 帧 / 10.5 秒，内置自检：期望不符即失败），
   并同步生成文字实录 `docs/demo_transcript.txt`（完整输出 + 退出码、路径脱敏、

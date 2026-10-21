@@ -42,8 +42,8 @@ FONT_SIZE = 15
 CELL_W = 8       # 拉丁 1 格（SimHei 实测 8px 等宽）
 CELL_H = 18
 WIDE = 16        # 中文 2 格
-COLS = 100
-ROWS = 28
+COLS = 96
+ROWS = 24
 PAD_X, PAD_Y = 16, 12
 
 BG = (12, 12, 12)
@@ -66,6 +66,10 @@ SCENES = [
     ["bash", "-c", r"printf '\xc7\xd1\xb1\xb9\xbe\xee' > _build/d/ko.bin"],
     ["bash", "-c", r"printf '\xff\xfe\x41\x00\x3d\xd8\x00\xde' > _build/d/u16.bin"],
     ["bash", "-c", r"printf '\xe4\xb8\xad\xe6\x96\x87' > _build/d/zh.txt"],
+    # ISO-2022-JP 的 日本語（ESC $ B ... ESC ( B）；x-user-defined 的 0x41/0x80/0xFF
+    ["bash", "-c",
+     r"printf '\x1b\x24\x42\x46\x7c\x4b\x5c\x38\x6c\x1b\x28\x42' > _build/d/ja2022.bin"
+     r" && printf '\x41\x80\xff' > _build/d/xud.bin"],
     # —— 正常路径：多编码互转 ——
     ["moon", "run", "cmd/main", "--", "decode", "gbk", "_build/d/cn.bin", "_build/d/cn.txt"],
     ["xxd", "-p", "_build/d/cn.txt"],
@@ -77,11 +81,20 @@ SCENES = [
     ["moon", "run", "cmd/main", "--", "decode", "euc-kr", "_build/d/ko.bin", "_build/d/ko.txt"],
     ["moon", "run", "cmd/main", "--", "decode", "utf-16le", "_build/d/u16.bin", "_build/d/u16.txt"],
     ["xxd", "-p", "_build/d/u16.txt"],
+    ["moon", "run", "cmd/main", "--", "decode", "iso-2022-jp",
+     "_build/d/ja2022.bin", "_build/d/ja3.txt"],
+    ["xxd", "-p", "_build/d/ja3.txt"],
+    ["moon", "run", "cmd/main", "--", "encode", "csiso2022jp",
+     "_build/d/ja3.txt", "_build/d/ja2022b.bin"],
+    ["bash", "-c", r"cmp _build/d/ja2022.bin _build/d/ja2022b.bin && echo 'OK: byte-identical'"],
+    ["moon", "run", "cmd/main", "--", "decode", "x-user-defined",
+     "_build/d/xud.bin", "_build/d/xud.txt"],
+    ["xxd", "-p", "_build/d/xud.txt"],
     # —— 错误路径：真实非零退出 + 真实错误文本 ——
     ["moon", "run", "cmd/main", "--", "decode", "no-such-label", "_build/d/cn.bin", "_build/d/x.txt"],
-    ["moon", "run", "cmd/main", "--", "decode", "iso-2022-jp", "_build/d/cn.bin", "_build/d/x.txt"],
     ["moon", "run", "cmd/main", "--", "encode", "windows-1252", "_build/d/zh.txt", "_build/d/zh.bin"],
     ["moon", "run", "cmd/main", "--", "encode", "utf-16le", "_build/d/cn.txt", "_build/d/x.bin"],
+    ["moon", "run", "cmd/main", "--", "encode", "replacement", "_build/d/ja3.txt", "_build/d/x.bin"],
     # —— 收尾：全量测试 ——
     ["moon", "test"],
 ]
@@ -122,8 +135,8 @@ def run(argv):
 def verify(display: str, out: str, code: int, argv) -> None:
     """演示自检：期望与真实行为不符立即失败（GIF 不会展示"编造"的结果）。"""
     if argv[-1] == "list":
-        assert code == 0 and "支持 37 种编码" in out, "list 输出异常"
-        assert out.count("\n  ") >= 37, "list 行数不足 37"
+        assert code == 0 and "支持 40 种编码" in out, "list 输出异常"
+        assert out.count("\n  ") >= 40, "list 行数不足 40"
     if argv[:2] == ["moon", "test"]:
         assert code == 0 and "failed: 0" in out, "moon test 未全绿"
     if argv[:2] == ["moon", "run"] and "decode gbk" in display:
@@ -133,11 +146,17 @@ def verify(display: str, out: str, code: int, argv) -> None:
     if "decode no-such-label" in display:
         assert code != 0 and "UnknownLabel" in out, "未知 label 错误文本不符"
     if "decode iso-2022-jp" in display:
-        assert code != 0 and 'UnsupportedEncoding("ISO-2022-JP")' in out, "未实现编码错误不符"
+        assert code == 0, "decode iso-2022-jp 失败"
+    if "encode csiso2022jp" in display:
+        assert code == 0, "encode csiso2022jp 失败"
+    if "decode x-user-defined" in display:
+        assert code == 0, "decode x-user-defined 失败"
     if "encode windows-1252" in display and "zh.txt" in display:
         assert code != 0 and "Unmappable(20013, 0)" in out, "不可映射错误不符"
     if "encode utf-16le" in display:
         assert code != 0 and 'UnsupportedEncoding("UTF-16LE")' in out, "UTF-16 编码器拒绝不符"
+    if "encode replacement" in display:
+        assert code != 0 and 'UnsupportedEncoding("replacement")' in out, "replacement 编码器拒绝不符"
 
 
 def build_lines():
@@ -180,7 +199,7 @@ def build_lines():
     return events
 
 
-def batch_outs(events, long_run=10, step=3):
+def batch_outs(events, long_run=10, step=5):
     """把连续的输出行按批折叠：短输出逐行（节奏感），长输出每帧 step 行（控体积）。"""
     out, i = [], 0
     while i < len(events):
@@ -229,7 +248,7 @@ def render(events, font, path: str):
         if kind == "prompt":
             visible.append([text, PROMPT, False])
         elif kind == "cmd":
-            chunks = [text[j:j + 18] for j in range(0, len(text), 18)] or [""]
+            chunks = [text[j:j + 26] for j in range(0, len(text), 26)] or [""]
             for chunk in chunks:
                 # 打字动画逐块推进**同一行**的文本；最终外观是一整行按列宽
                 # 折行（wrap），而不是被分块硬切成短行
@@ -253,7 +272,7 @@ def render(events, font, path: str):
     for slot, i in enumerate(sample_idx):
         y = slot * height
         strip.paste(images[i], (0, y, width, y + height))
-    palette = strip.quantize(colors=32, method=Image.MEDIANCUT)
+    palette = strip.quantize(colors=24, method=Image.MEDIANCUT)
     quantized = [im.quantize(palette=palette, dither=Image.FLOYDSTEINBERG)
                  for im in images]
 

@@ -4,7 +4,7 @@
 #     python tools/make_demo.py
 
 $ moon run cmd/main -- list
-支持 37 种编码（WHATWG 规范名）:
+支持 40 种编码（WHATWG 规范名）:
   IBM866
   ISO-8859-2
   ISO-8859-3
@@ -39,9 +39,12 @@ $ moon run cmd/main -- list
   Shift_JIS
   EUC-JP
   EUC-KR
+  ISO-2022-JP
   UTF-8
   UTF-16BE
   UTF-16LE
+  replacement
+  x-user-defined
 [exit 0]
 
 $ printf '\xd6\xd0\xce\xc4' > _build/d/cn.bin
@@ -63,6 +66,9 @@ $ printf '\xff\xfe\x41\x00\x3d\xd8\x00\xde' > _build/d/u16.bin
 [exit 0]
 
 $ printf '\xe4\xb8\xad\xe6\x96\x87' > _build/d/zh.txt
+[exit 0]
+
+$ printf '\x1b\x24\x42\x46\x7c\x4b\x5c\x38\x6c\x1b\x28\x42' > _build/d/ja2022.bin && printf '\x41\x80\xff' > _build/d/xud.bin
 [exit 0]
 
 $ moon run cmd/main -- decode gbk _build/d/cn.bin _build/d/cn.txt
@@ -105,13 +111,32 @@ $ xxd -p _build/d/u16.txt
 efbbbf41f09f9880
 [exit 0]
 
+$ moon run cmd/main -- decode iso-2022-jp _build/d/ja2022.bin _build/d/ja3.txt
+已写入: _build/d/ja3.txt（3 字符，UTF-8）
+[exit 0]
+
+$ xxd -p _build/d/ja3.txt
+e697a5e69cace8aa9e
+[exit 0]
+
+$ moon run cmd/main -- encode csiso2022jp _build/d/ja3.txt _build/d/ja2022b.bin
+已写入: _build/d/ja2022b.bin（12 字节，csiso2022jp）
+[exit 0]
+
+$ cmp _build/d/ja2022.bin _build/d/ja2022b.bin && echo 'OK: byte-identical'
+OK: byte-identical
+[exit 0]
+
+$ moon run cmd/main -- decode x-user-defined _build/d/xud.bin _build/d/xud.txt
+已写入: _build/d/xud.txt（3 字符，UTF-8）
+[exit 0]
+
+$ xxd -p _build/d/xud.txt
+41ef9e80ef9fbf
+[exit 0]
+
 $ moon run cmd/main -- decode no-such-label _build/d/cn.bin _build/d/x.txt
 解码失败: UnknownLabel("no-such-label")
-(stderr) RuntimeError: unreachable
-[exit 1]
-
-$ moon run cmd/main -- decode iso-2022-jp _build/d/cn.bin _build/d/x.txt
-解码失败: UnsupportedEncoding("ISO-2022-JP")
 (stderr) RuntimeError: unreachable
 [exit 1]
 
@@ -125,7 +150,12 @@ $ moon run cmd/main -- encode utf-16le _build/d/cn.txt _build/d/x.bin
 (stderr) RuntimeError: unreachable
 [exit 1]
 
+$ moon run cmd/main -- encode replacement _build/d/ja3.txt _build/d/x.bin
+编码失败: UnsupportedEncoding("replacement")
+(stderr) RuntimeError: unreachable
+[exit 1]
+
 $ moon test
-Total tests: 147, passed: 147, failed: 0.
+Total tests: 165, passed: 165, failed: 0.
 [exit 0]
 

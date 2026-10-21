@@ -1,6 +1,6 @@
 name = "LL728/moon_encoding"
 
-version = "0.1.2"
+version = "0.2.0"
 
 readme = "README.md"
 
@@ -16,9 +16,10 @@ keywords = [
   "gbk",
   "big5",
   "shift_jis",
+  "iso-2022-jp",
 ]
 
-description = "WHATWG Encoding Standard 的 MoonBit 实现：label 解析、流式解码与一次性编码 API，覆盖 GBK、Big5、Shift_JIS 等传统字符集"
+description = "WHATWG Encoding Standard 的 MoonBit 实现：label 解析、流式解码与一次性编码 API，覆盖规范定义的全部 40 种编码（含 GBK、Big5、Shift_JIS、ISO-2022-JP）"
 
 preferred_target = "wasm-gc"
 

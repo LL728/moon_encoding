@@ -3,7 +3,7 @@
 [![CI](https://github.com/LL728/moon_encoding/actions/workflows/ci.yml/badge.svg)](https://github.com/LL728/moon_encoding/actions/workflows/ci.yml)
 
 WHATWG Encoding Standard 的 MoonBit 实现：完整的 label 解析（228 个）、
-流式解码 API、一次性编码 API 与文件转码命令行工具，按里程碑覆盖该标准定义的 40 种编码。
+流式解码 API、一次性编码 API 与文件转码命令行工具，覆盖该标准定义的全部 40 种编码。
 
 数据表直接由 [whatwg/encoding](https://github.com/whatwg/encoding) 的规范源数据生成
 （固定版本 `2c3853e`，与 Rust `encoding_rs` 的表生成同源），不经过任何二手实现。
@@ -11,19 +11,20 @@ WHATWG Encoding Standard 的 MoonBit 实现：完整的 label 解析（228 个�
 ## 编码覆盖状态
 
 WHATWG Encoding Standard 共定义 40 种编码、228 个 label。
-**label 解析已全部完成**；编解码按里程碑推进：
+**40 种编码全部接线**（label 解析 + 解码 + 编码；规范未定义编码器的三种除外，见下）：
 
 | 分组 | 编码 | 状态 |
 | --- | --- | --- |
 | 单字节（28 种） | `windows-1252`（含 `latin1` / `ascii` 等别名）、`ISO-8859-2/3/4/5/6/7/8/8-I/10/13/14/15/16`、`windows-874/1250..1258`、`KOI8-R/U`、`IBM866`、`macintosh`、`x-mac-cyrillic` | ✅ 已实现 |
 | 中文 | `GBK`（含 `gb2312` / `chinese` 等别名）、`gb18030`（含 4 字节） | ✅ 已实现 |
-| 日文 | `Shift_JIS` | ✅ 已实现 |
+| 日文 | `Shift_JIS`、`ISO-2022-JP`（7 状态转义状态机 + 跨块状态） | ✅ 已实现 |
 | 日文 / 韩文 | `EUC-JP`（含 SS2/SS3）、`EUC-KR` | ✅ 已实现 |
 | 中文（繁体） | `Big5` | ✅ 已实现 |
 | Unicode | `UTF-8`、`UTF-16BE`、`UTF-16LE`（仅解码，见下） | ✅ 已实现 |
-| 其他 | `ISO-2022-JP`、`replacement`、`x-user-defined` | ⏸ 可裁剪，不在当前范围 |
+| 其他 | `replacement`（至多一个 U+FFFD）、`x-user-defined`（算法定义，无索引表） | ✅ 已实现 |
 
-尚未实现的编码会返回明确的 `UnsupportedEncoding` 错误（而不是静默失败），
+规范不定义 `replacement` 与 `UTF-16BE`/`UTF-16LE` 的**编码器**（`§get an encoder` 断言），
+对它们调用 `encode` 会返回明确的 `UnsupportedEncoding` 错误（而不是静默失败）；
 未知 label 返回 `UnknownLabel`——两者可区分。
 
 ## 与 MoonBit 生态现有实现的关系
@@ -41,11 +42,11 @@ Mooncakes 上已有 [`f4ah6o/encoding_sjis`](https://mooncakes.io/docs/f4ah6o/en
 
 | 维度 | `f4ah6o/encoding_sjis` | 本库 `moon_encoding` |
 | --- | --- | --- |
-| 编码范围 | 仅 Shift_JIS 一种 | 40 种编码 / 228 个 label 全集解析，37 种已接线编解码 |
-| 方向 | 仅解码（无编码端） | 解码 + 编码（fatal 模式），含 Shift_JIS 编码器 |
-| 流式解码 | ✅ `new_decoder` / `decode_to_string` | ✅ `Decoder::new` / `consume` / `finish`，统一覆盖全部已接线编码 |
+| 编码范围 | 仅 Shift_JIS 一种 | 40 种编码 / 228 个 label 全部接线（编解码；规范未定义编码器的三种除外） |
+| 方向 | 仅解码（无编码端） | 解码 + 编码（fatal 模式），含 Shift_JIS / ISO-2022-JP 编码器 |
+| 流式解码 | ✅ `new_decoder` / `decode_to_string` | ✅ `Decoder::new` / `consume` / `finish`，统一覆盖全部已接线编码（含 ISO-2022-JP 的转义与双字节跨块） |
 | 合规基准 | encoding_rs-compliant（自述） | WHATWG `encoding.bs` 逐条实现 |
-| 附加能力 | — | 28 种单字节编码、GBK/gb18030、Big5、EUC-JP/EUC-KR、UTF-8/UTF-16、CLI 转码、CPython 差分测试 |
+| 附加能力 | — | 28 种单字节编码、GBK/gb18030、Big5、EUC-JP/EUC-KR、ISO-2022-JP、replacement/x-user-defined、UTF-8/UTF-16、CLI 转码、CPython 差分测试 |
 
 ## 安装
 
@@ -105,7 +106,7 @@ match @moon_encoding.Decoder::new("windows-1252") {
 ```moonbit
 pub enum EncodingError {
   UnknownLabel(String)           // label 不在标准定义的 228 个之内
-  UnsupportedEncoding(String)    // label 合法，编码尚未实现
+  UnsupportedEncoding(String)    // label 合法但规范未定义编码器（replacement / UTF-16BE / UTF-16LE）
   Unmappable(Int, Int)           // 编码遇不可映射字符：码点 + 字符位置
 } derive(Eq, @debug.Debug)
 ```
@@ -133,8 +134,8 @@ moon run cmd/main -- list
 失败一律以非零退出码结束并打印原因，便于脚本使用：
 
 ```text
-$ moon run cmd/main -- decode iso-2022-jp in.bin out.txt
-解码失败: UnsupportedEncoding("ISO-2022-JP")
+$ moon run cmd/main -- encode replacement in.txt out.bin
+编码失败: UnsupportedEncoding("replacement")
 $ echo $?
 1
 ```
@@ -143,9 +144,10 @@ $ echo $?
 
 ![moon_encoding 演示](docs/demo.gif)
 
-演示覆盖：编码清单（37 种）、GBK/gb18030 往返、Big5/Shift_JIS/EUC-JP/EUC-KR/
-UTF-16 解码、四类错误路径（未知 label、未实现编码、不可映射字符、规范未定义的
-UTF-16 编码器）与全量测试收尾。
+演示覆盖：编码清单（40 种）、GBK/gb18030 往返、Big5/Shift_JIS/EUC-JP/EUC-KR/
+UTF-16 解码、ISO-2022-JP 的日本語解码 + 编码往返（编码端用 label 别名 `csiso2022jp`）、
+x-user-defined 解码、三类错误路径（未知 label、不可映射字符、规范未定义编码器的
+replacement / UTF-16）与全量测试收尾。
 
 - 同步生成的文字实录：[docs/demo_transcript.txt](docs/demo_transcript.txt)
   （含每条命令的完整输出与退出码，作为 GIF 内容未被加工的凭据）
@@ -154,7 +156,7 @@ UTF-16 编码器）与全量测试收尾。
 
 ## 验证方式
 
-`moon test` **147 项**，在 wasm-gc 与 js 两个后端上全绿；CI 每次提交都跑格式检查、
+`moon test` **165 项**，在 wasm-gc 与 js 两个后端上全绿；CI 每次提交都跑格式检查、
 `moon check --deny-warn`、构建、双后端测试、生成物新鲜度与命令行端到端。
 
 - **单元与属性测试**：label 解析、28 张表的结构不变量（128 项解码表、合法非代理码点、
@@ -174,7 +176,19 @@ UTF-16 编码器）与全量测试收尾。
   过长/代理区头拒绝（C0 80、E0 80 80、ED A0 80 各自的 U+FFFD 个数）、
   截断单 U+FFFD；UTF-16 孤立低代理报错、未配对高代理的**当前码元重放**
   （00D8 4100 → U+FFFD + 'A'，字符不丢）、BOM 按 U+FEFF 输出、
-  以及 UTF-16 编码按规范返回 UnsupportedEncoding。
+  以及 UTF-16 编码按规范返回 UnsupportedEncoding；
+  ISO-2022-JP 的 **7 状态 + 4 变量**逐条行为（5 条转义序列、katakana 状态不查表、
+  output 布尔量导致的"连续转义报错"、output state 让非法转义退回原模式）、
+  Trailing byte 非法第二字节**被吞掉不回退**（对比 EUC-KR 会回放 ASCII 字节）、
+  7 种状态的 end-of-queue 行为（Escape 会把 0x24/0x28 放回队列 → `U+FFFD U+0024`）、
+  编码器的 U+000E/U+000F/U+001B → `Unmappable(U+FFFD, 位置)`、U+2212→U+FF0D、
+  半角片假名经 `index ISO-2022-JP katakana` 转全角、规范自己的
+  "¥ 编码两次拼接后解码得 ¥ U+FFFD ¥" 注记；
+  **跨块状态**：转义序列 / 双字节字符 / ESC 切在任意位置、逐字节喂入、每个切分点
+  （含 0 与 n）+ 1200 组随机多切分均等于一次性 `decode()`；
+  replacement 的"至多一次 U+FFFD 后整体 finished"（256 字节也只有 1 个 U+FFFD）、
+  x-user-defined 的 256 字节恒等/偏移与全量双向往返；
+  228 个 label 的端到端生成套件（逐个解析 + 解码器可构造 + 编码可达性）。
 - **Python 差分测试**：以 CPython 各编码的 codec 为独立预言机，
   **8500+ 黄金向量**由 `tools/gen_vectors.py` 生成并提交进仓库，覆盖 28 种单字节编码、
   GBK/gb18030、Big5/Shift_JIS、EUC-JP/EUC-KR 与 UTF 三件套。分类按编码**逐样本自动
@@ -183,6 +197,10 @@ UTF-16 编码器）与全量测试收尾。
   逐编码计数——windows-1252 的 `0x81/8D/8F/90/9D`（CPython 报错、WHATWG 映射 C1）、
   EUC-JP 的 57 处 JIS 表格差异、UTF-16 各三百余次 strict 跳过都在其中；
   分歧清单不写死，UTF-16 只有解码向量（规范不定义其编码器）。
+  `ISO-2022-JP` / `replacement` / `x-user-defined` **不进差分向量**：CPython 的
+  `iso2022_jp` 在这三处与规范系统性分歧（拒绝 `ESC ( I`、把 0x0E/0x0F 当普通字符、
+  拒绝半角片假名、转义后强制回 ASCII），按"规范优先"原则改由
+  `iso2022_wbtest.mbt` / `misc_wbtest.mbt` 的规范级单测逐条钉住。
 - **新鲜度检查**：CI 重新生成全部表与向量后 `git diff --exit-code`，
   保证提交内容永远等于生成器产物。
 
@@ -203,26 +221,28 @@ moon fmt && moon check --deny-warn && moon test
 | `utf.mbt` | UTF-8 / 共享 UTF-16 状态机与 UTF-8 编码器（规范 §utf-8 / §shared-utf-16 逐条实现） |
 | `euc.mbt` | EUC-JP / EUC-KR 状态机与编码器（规范 §euc-jp / §euc-kr 逐条实现） |
 | `multibyte.mbt` | Big5 与 Shift_JIS 状态机与编码器（规范 §big5 / §shift_jis 逐条实现） |
-| `gen_label.mbt` / `gen_single_byte.mbt` / `gen_chinese.mbt` / `gen_big5_sjis.mbt` / `gen_euc.mbt` | 生成物：label 表、单字节表、gb18030 与 Big5/jis0208/EUC 各索引与编码反向表（勿手改） |
+| `iso2022.mbt` | ISO-2022-JP 的 7 状态解码器（4 个关联变量）与编码器（规范 §iso-2022-jp-decoder / encoder 逐条实现） |
+| `misc.mbt` | replacement 解码器（至多一次 error）与 x-user-defined 的算法合成表 |
+| `gen_label.mbt` / `gen_single_byte.mbt` / `gen_chinese.mbt` / `gen_big5_sjis.mbt` / `gen_euc.mbt` / `gen_iso2022.mbt` | 生成物：label 表、单字节表、gb18030 与 Big5/jis0208/EUC/ISO-2022-JP katakana 各索引与编码反向表（勿手改） |
 | `gen_w1252_vectors_wbtest.mbt` | 生成物：CPython 差分黄金向量（勿手改） |
 | `cmd/main/` | 文件转码 CLI |
 | `tools/` | 规范数据 vendor、表与差分向量生成器、规范参考实现（`chinese_ref.py`、`multibyte_ref.py`、`utf_ref.py`，encode-map 规则单一来源） |
 
 ## 已知限制
 
-- 已实现范围为 28 种 legacy 单字节编码 + `GBK` / `gb18030` / `Big5` / `Shift_JIS` /
-  `EUC-JP` / `EUC-KR` / `UTF-8` / `UTF-16BE` / `UTF-16LE`（共 37 种，
-  `supported_encodings()` 可查询）；仅剩 `ISO-2022-JP`、`replacement`、
-  `x-user-defined` 三个可裁剪的特殊编码尚未接线，返回 `UnsupportedEncoding`。
-- **规范不定义 UTF-16 编码器**（`§get an encoder` 断言 encoding 不是 replacement
-  或 UTF-16BE/LE）：`encode(..., "utf-16le" / "utf-16be")` 如实返回
-  `UnsupportedEncoding`，解码不受影响。
+- 已实现范围为规范全部 40 种编码（28 种 legacy 单字节 + `GBK` / `gb18030` / `Big5` /
+  `Shift_JIS` / `EUC-JP` / `EUC-KR` / `ISO-2022-JP` / `UTF-8` / `UTF-16BE` / `UTF-16LE` /
+  `replacement` / `x-user-defined`，`supported_encodings()` 可查询 40 个规范名）。
+- **规范不定义 `replacement` 与 `UTF-16` 的编码器**（`§get an encoder` 断言 encoding
+  不是 replacement 或 UTF-16BE/LE）：`encode(..., "replacement" / "utf-16le" / "utf-16be")`
+  如实返回 `UnsupportedEncoding`，解码不受影响。
 - 未实现 BOM 嗅探与 `decode()` 的自动 BOM 覆写；label 由调用方显式给出。
   因此 UTF-16 输入里的 BOM 会作为 U+FEFF 字符解出（与 CPython 的
   `utf-16-be` / `utf-16-le` 行为一致）。
 - 编码侧只提供 fatal 模式原语；规范中 HTML 表单用的 `&#码点;` 替换模式（html 模式）
   尚未提供。
-- 单字节编码无跨块状态；多字节编码（GBK/Big5/Shift_JIS/EUC/UTF-16）的挂起状态
+- 单字节编码与 x-user-defined 无跨块状态（replacement 只跨块保留"是否已报过 error"
+  两个布尔量）；多字节编码（GBK/Big5/Shift_JIS/EUC/ISO-2022-JP/UTF-16）的挂起状态
   保存在解码器内跨块续传，任意切分等价由"每个切分点 + 随机切分"测试覆盖。
 
 ## 参考与许可
@@ -235,4 +255,5 @@ moon fmt && moon check --deny-warn && moon test
   `generate-encoding-data.py`（同为 `(Apache-2.0 OR MIT)`，本项目未移植其代码，
   仅沿用其钉定的 whatwg/encoding 版本以保证数据同源）。
 - 差分预言机：CPython 标准库 `codecs` 的各编码实现（`cp1252`、`gbk`、`big5`、
-  `shift_jis`、`euc_jp`、`euc_kr`、`utf-8`、`utf-16-le` 等，PSF 许可）。
+  `shift_jis`、`euc_jp`、`euc_kr`、`utf-8`、`utf-16-le` 等，PSF 许可）；
+  `iso2022_jp` 因与规范存在系统性分歧，只作为人工对照、不进入黄金向量。
