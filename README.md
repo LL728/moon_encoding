@@ -20,7 +20,7 @@ WHATWG Encoding Standard 共定义 40 种编码、228 个 label。
 | 日文 | `Shift_JIS`、`ISO-2022-JP`（7 状态转义状态机 + 跨块状态） | ✅ 已实现 |
 | 日文 / 韩文 | `EUC-JP`（含 SS2/SS3）、`EUC-KR` | ✅ 已实现 |
 | 中文（繁体） | `Big5` | ✅ 已实现 |
-| Unicode | `UTF-8`、`UTF-16BE`、`UTF-16LE`（仅解码，见下） | ✅ 已实现 |
+| Unicode | `UTF-8`、`UTF-16BE`、`UTF-16LE`（后两者仅解码，见下） | ✅ 已实现 |
 | 其他 | `replacement`（至多一个 U+FFFD）、`x-user-defined`（算法定义，无索引表） | ✅ 已实现 |
 
 规范不定义 `replacement` 与 `UTF-16BE`/`UTF-16LE` 的**编码器**（`§get an encoder` 断言），
@@ -54,7 +54,7 @@ Mooncakes 上已有 [`f4ah6o/encoding_sjis`](https://mooncakes.io/docs/f4ah6o/en
 moon add LL728/moon_encoding
 ```
 
-库本身只依赖 `moonbitlang/core`（随工具链自带）。
+库包只依赖 `moonbitlang/core`（随工具链自带）；`moon.mod` 另声明 `moonbitlang/x@0.5.5`，仅供命令行（`cmd/main`）读写文件使用。
 
 ## 使用
 
@@ -117,6 +117,10 @@ pub enum EncodingError {
 
 ## 命令行
 
+以下命令须在**本仓库克隆的根目录**执行：`cmd/main` 是本仓库自带的 CLI 包，在别的工程里
+`moon run cmd/main` 会命中那个工程自己的 `cmd/main`（例如 `moon new` 模板打印 `Hello` 的那个），
+不会报错但也不会做转码。
+
 ```bash
 # 字节 -> UTF-8 文本
 moon run cmd/main -- decode <label> <input> <output>
@@ -125,11 +129,20 @@ moon run cmd/main -- encode <label> <input> <output>
 # 列出本构建支持的全部编码（WHATWG 规范名）
 moon run cmd/main -- list
 
-# 示例
-moon run cmd/main -- decode windows-1252 legacy.txt utf8.txt
-moon run cmd/main -- encode latin1 utf8.txt legacy.txt
-moon run cmd/main -- list
+# 零门槛复现：仓库自带两个样例，解码再编码应与原文件逐字节一致
+#   demo/sample-cp1252.bin    = 63 61 66 E9                      → windows-1252 的「café」
+#   demo/sample-iso2022jp.bin = 1B 24 42 46 7C 4B 5C 38 6C 1B 28 42 → ISO-2022-JP 的「日本語」
+moon run cmd/main -- decode windows-1252 demo/sample-cp1252.bin cafe.txt
+moon run cmd/main -- encode windows-1252 cafe.txt cafe.bin
+cmp demo/sample-cp1252.bin cafe.bin        # 无输出即逐字节一致；cafe.txt 内容为 café
+
+moon run cmd/main -- decode iso-2022-jp demo/sample-iso2022jp.bin ja.txt
+moon run cmd/main -- encode iso-2022-jp ja.txt ja.bin
+cmp demo/sample-iso2022jp.bin ja.bin       # ja.txt 内容为 日本語（样本含 ESC $ B / ESC ( B）
 ```
+
+两个样例共 16 字节，上面的四条命令 + 两次 `cmp` 均已实测通过（`cmp` 无输出）。
+输出文件写在当前目录，可删；样例本身见 [`demo/`](demo/)。
 
 失败一律以非零退出码结束并打印原因，便于脚本使用：
 
@@ -190,7 +203,7 @@ replacement / UTF-16）与全量测试收尾。
   x-user-defined 的 256 字节恒等/偏移与全量双向往返；
   228 个 label 的端到端生成套件（逐个解析 + 解码器可构造 + 编码可达性）。
 - **Python 差分测试**：以 CPython 各编码的 codec 为独立预言机，
-  **8500+ 黄金向量**由 `tools/gen_vectors.py` 生成并提交进仓库，覆盖 28 种单字节编码、
+  **8490 条黄金向量**由 `tools/gen_vectors.py` 生成并提交进仓库，覆盖 28 种单字节编码、
   GBK/gb18030、Big5/Shift_JIS、EUC-JP/EUC-KR 与 UTF 三件套。分类按编码**逐样本自动
   计算**（规范参考实现在 `tools/chinese_ref.py` / `multibyte_ref.py` / `utf_ref.py`，
   与表生成器同源）：两边同值才进向量，两边都报错由 U+FFFD 单测覆盖，有分歧则排除并
@@ -226,6 +239,8 @@ moon fmt && moon check --deny-warn && moon test
 | `gen_label.mbt` / `gen_single_byte.mbt` / `gen_chinese.mbt` / `gen_big5_sjis.mbt` / `gen_euc.mbt` / `gen_iso2022.mbt` | 生成物：label 表、单字节表、gb18030 与 Big5/jis0208/EUC/ISO-2022-JP katakana 各索引与编码反向表（勿手改） |
 | `gen_w1252_vectors_wbtest.mbt` | 生成物：CPython 差分黄金向量（勿手改） |
 | `cmd/main/` | 文件转码 CLI |
+| `demo/` | 命令行示例用的极小样例（windows-1252 与 ISO-2022-JP 各一个，共 16 字节） |
+| `docs/` | 演示 GIF 与同步生成的文字实录 |
 | `tools/` | 规范数据 vendor、表与差分向量生成器、规范参考实现（`chinese_ref.py`、`multibyte_ref.py`、`utf_ref.py`，encode-map 规则单一来源） |
 
 ## 已知限制
