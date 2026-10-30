@@ -43,8 +43,9 @@ jobs:
           moon fmt
           git diff --exit-code
 
+      # 与官方模板一致（moonbit-community/.github/workflow-templates/check.yml）：静态检查跑全部后端
       - name: 检查
-        run: moon check --target wasm-gc --deny-warn
+        run: moon check --target all --deny-warn
 
       - name: 构建
         run: moon build --target wasm-gc
@@ -55,6 +56,10 @@ jobs:
       # 编解码是纯计算，js 后端应给出同样的结果
       - name: 测试（js 后端）
         run: moon test --target js
+
+      # native 后端由 ubuntu runner 的 gcc 提供；macOS / Windows 仍未验证（见 README「已知限制」）
+      - name: 测试（native 后端）
+        run: moon test --target native
 
       # E2E 的唯一来源是 tools/e2e.sh（本地门禁跑的也是它，杜绝两份副本漂移）
       - name: 命令行端到端（成功路径 + 错误路径）

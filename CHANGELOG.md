@@ -11,8 +11,19 @@
   关键架构决策 5 条、参考来源与许可范围表，以及 AI 使用边界。
 - README「零门槛复现」：仓库自带 `demo/` 两个极小样例（`windows-1252` 与 `ISO-2022-JP`，共 16 字节），
   四条命令 + 两次比对即可验证「解码 → 回编码」逐字节一致。
+- `tools/data/README.md`：记录 vendored 规范数据的**来源、钉定版本与实测校验值** ——
+  上游 URL、完整 commit `2c3853e…`、两个 JSON 的字节数与 sha256、许可以及再分发依据；
+  并如实标注「未与上游做过逐字节比对」，不写成无法验证的断言。
 
 ### 变更
+- **CI 后端覆盖扩到三个**：静态检查由 `--target wasm-gc` 升级为
+  `moon check --target all --deny-warn`（与官方模板 `moonbit-community/.github/workflow-templates/check.yml`
+  一致），并新增 `moon test --target native`（ubuntu runner 自带 gcc）。
+- **README「已知限制」新增「平台与后端验证范围」**：写明 CI 在 ubuntu-latest 上验证哪三个后端、
+  macOS 与 Windows 未经 CI 验证、以及本机 Windows 缺 MSVC 导致 `moon test --target native`
+  不可用属环境限制而非实现缺陷。
+- README `utf.mbt` 一行的规范引用修正：`§shared-utf-16` 不是合法锚点，
+  实际是 **§14.2.1 `shared UTF-16 decoder`**。
 - README 校正三处口径：黄金向量 `8500+` → **8490**（按括号配对实测的条目数）；
   把 `UTF-8` 从「仅解码」括号中摘出（UTF-8 编码器已实现，规范不定义编码器的只有
   `replacement` 与 UTF-16BE/LE）；「库本身只依赖 `core`」补充说明

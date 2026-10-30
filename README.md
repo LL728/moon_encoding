@@ -231,7 +231,7 @@ moon fmt && moon check --deny-warn && moon test
 | `single_byte.mbt` | 28 种单字节编码共用的表驱动编解码引擎 |
 | `codec.mbt` | 公共 API：`EncodingError`、流式 `Decoder`、`decode` / `encode` |
 | `gbk.mbt` | GBK/gb18030 状态机与编码器（规范 §gb18030-decoder/encoder 逐条实现） |
-| `utf.mbt` | UTF-8 / 共享 UTF-16 状态机与 UTF-8 编码器（规范 §utf-8 / §shared-utf-16 逐条实现） |
+| `utf.mbt` | UTF-8 / 共享 UTF-16 状态机与 UTF-8 编码器（规范 §utf-8 / §14.2.1 `shared UTF-16 decoder` 逐条实现） |
 | `euc.mbt` | EUC-JP / EUC-KR 状态机与编码器（规范 §euc-jp / §euc-kr 逐条实现） |
 | `multibyte.mbt` | Big5 与 Shift_JIS 状态机与编码器（规范 §big5 / §shift_jis 逐条实现） |
 | `iso2022.mbt` | ISO-2022-JP 的 7 状态解码器（4 个关联变量）与编码器（规范 §iso-2022-jp-decoder / encoder 逐条实现） |
@@ -259,6 +259,13 @@ moon fmt && moon check --deny-warn && moon test
 - 单字节编码与 x-user-defined 无跨块状态（replacement 只跨块保留"是否已报过 error"
   两个布尔量）；多字节编码（GBK/Big5/Shift_JIS/EUC/ISO-2022-JP/UTF-16）的挂起状态
   保存在解码器内跨块续传，任意切分等价由"每个切分点 + 随机切分"测试覆盖。
+- **平台与后端验证范围**：CI 在 **ubuntu-latest** 上验证三个后端 —— `moon check --target all --deny-warn`
+  （wasm / wasm-gc / native / js 的静态检查）、`moon test --target wasm-gc`、`moon test --target js`、
+  `moon test --target native`（见 `.github/workflows/ci.yml`）。
+  **macOS 与 Windows 未经 CI 验证**；本机 Windows 缺 MSVC Build Tools，
+  `moon test --target native` 在 Windows 上会报
+  `Windows native backend requires MSVC Build Tools with C++ tools and Windows SDK` ——
+  这是**环境限制，不是实现缺陷**（`moon check --target native` 不需要 C 工具链，本机可通过）。
 
 ## 参考与许可
 
