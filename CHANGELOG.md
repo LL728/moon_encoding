@@ -31,6 +31,12 @@
 - README 命令行一节注明**须在本仓库克隆的根目录**执行——在别的工程里 `moon run cmd/main`
   会命中那个工程自己的 `cmd/main`（如 `moon new` 模板打印 `Hello` 的那个），不报错但也不做转码。
 - `.gitignore` 忽略 `*.generated.mbti`（`moon info` 生成的接口快照，不应入库）。
+- README「命令行」一节补明两个 `demo/` 样例的**来源**：由本项目**手工构造**，字节取自规范映射本身
+  （windows-1252 的 `E9` 即 `é`；ISO-2022-JP 的 `1B 24 42 … 1B 28 42` 是 `ESC $ B` + `jis0208`
+  中三个汉字指针的双字节 + `ESC ( B` 回 ASCII），**不含任何第三方素材** —— 对应章程对
+  「生成代码、测试数据或样例文件来源合法合规」的要求。
+- README「参考与许可」新增一行指向 [`tools/data/README.md`](tools/data/README.md)：此前该文件
+  已记录 vendored 数据的来源与校验值，但仓库内**没有任何入口可达**。
 
 ## [0.2.0] - 2026-10-21
 
