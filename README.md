@@ -273,6 +273,8 @@ moon fmt && moon check --deny-warn && moon test
 - 数据表源自 [WHATWG Encoding Standard](https://encoding.spec.whatwg.org/)，
   © WHATWG (Apple, Google, Mozilla, Microsoft)，按 [BSD 3-Clause](LICENSE-WHATWG) 授权
   （规范仓库 LICENSE 文件原文说明：并入源码的部分以 BSD-3-Clause 授权）。
+- 两个 vendored 数据文件（`tools/data/encodings.json` / `indexes.json`）的**来源 URL、钉定 commit
+  与实测 sha256** 见 [`tools/data/README.md`](tools/data/README.md)。
 - 表生成流程参考 [encoding_rs](https://github.com/hsivonen/encoding_rs) 的
   `generate-encoding-data.py`（同为 `(Apache-2.0 OR MIT)`，本项目未移植其代码，
   仅沿用其钉定的 whatwg/encoding 版本以保证数据同源）。
