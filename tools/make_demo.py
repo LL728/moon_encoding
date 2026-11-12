@@ -20,6 +20,7 @@
 """
 
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -107,12 +108,17 @@ def find_font() -> str:
     raise SystemExit("找不到 CJK 字体，用 --font 指定路径（候选均不存在）")
 
 
+# 本机用户目录形状的绝对路径（任意盘符 / 任意用户名）统一脱敏。
+# 不在此硬编码具体用户名——那本身就会把本机账号信息写进公开仓库。
+_USER_PATH_RE = re.compile(r"[A-Za-z]:[\\/]+Users[\\/]+[^\\/\s\"']+")
+
+
 def sanitize(text: str) -> str:
     """脱敏本机用户路径（transcript 与帧内容共用）。"""
     home = str(Path.home())
     if home:
         text = text.replace(home, "<home>")
-    return text.replace("C:\\Users\\1510", "<user>")
+    return _USER_PATH_RE.sub("<user>", text)
 
 
 def run(argv):
