@@ -5,6 +5,17 @@
 
 ## [未发布]
 
+### 兼容性
+- **适配 MoonBit 工具链 2026-11 更新（最低要求 `0.1.20261104`）**。新版 `moon fmt` 把
+  `} derive(...)` 后置写法规范化为 `#derive(...)` 前缀写法；旧编译器不认该写法
+  （`syntax error in attribute`，随后表现为 `does not implement trait Eq/Debug`）。
+  本次按新格式化器输出改编 `codec.mbt` / `iso2022.mbt` 两处（纯格式，语义不变，2 文件 4 行）。
+  已在 `moon 0.1.20261104 (940aa18 2026-11-04)` / `moonc v0.10.20+65efd5b93` 上实测：
+  `fmt --check` / `check --target all --deny-warn` / `build` / `test`（wasm-gc 与 js 各 165 项）/
+  `tools/e2e.sh` 全部通过。README「验证方式」已记录已验证版本与最低要求。
+- `tools/e2e.sh` 的 PATH 前置改为 `${MOON_HOME:-$HOME/.moon}/bin`，使其尊重 `MOON_HOME`
+  （未设该变量时行为与之前一致；此前硬编码 `$HOME/.moon/bin`，导致无法用隔离工具链运行本脚本）。
+
 ### 新增
 - `DEVELOPMENT.md`：开发回顾。给出**手写与生成物的逐文件边界**
   （手写库源码 9 文件 1912 行 / CLI 91 行 / 手写测试 9 文件 2584 行 / 生成物 7 文件 39841 行）、

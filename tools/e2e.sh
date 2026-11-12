@@ -9,7 +9,8 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
-export PATH="${HOME}/.moon/bin:${PATH}"
+# 尊重 MOON_HOME：允许在同一台机器上用隔离的工具链跑本脚本（未设 MOON_HOME 时行为不变）
+export PATH="${MOON_HOME:-$HOME/.moon}/bin:${PATH}"
 if command -v python3 >/dev/null 2>&1 && python3 -c "" >/dev/null 2>&1; then
   PY=python3
 else

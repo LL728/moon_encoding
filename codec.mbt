@@ -10,6 +10,7 @@
 
 ///|
 /// 编解码过程中可能的错误。
+#derive(Eq, @debug.Debug)
 pub enum EncodingError {
   /// label 不在 WHATWG Encoding Standard 定义的 228 个 label 之内。
   UnknownLabel(String)
@@ -19,7 +20,7 @@ pub enum EncodingError {
   /// 编码时遇到目标编码无法表示的字符（fatal 模式）。
   /// 第一个参数是码点值，第二个是它在输入中的字符位置。
   Unmappable(Int32, Int32)
-} derive(Eq, @debug.Debug)
+}
 
 ///|
 /// 显式声明 trait 方法提升（新编译器弃用隐式提升，见 implicit_impl_as_method）。

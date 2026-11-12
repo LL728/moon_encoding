@@ -290,11 +290,12 @@ fn iso2022_jp_finish(st : Iso2022JpState) -> String {
 
 ///|
 /// ISO-2022-JP 编码器的状态：规范只有 1 个变量（ASCII / Roman / jis0208）。
+#derive(Eq)
 priv enum Iso2022JpEncoderState {
   AsciiMode
   RomanMode
   Jis0208Mode
-} derive(Eq)
+}
 
 ///|
 /// ISO-2022-JP 编码（§iso-2022-jp-encoder 逐步翻译）。
