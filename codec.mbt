@@ -261,6 +261,26 @@ pub enum EncodeErrorMode {
 /// 存在的唯一目的是让两种变体在库编译单元里各被**构造**一次 —— 否则
 /// `unused_constructor` 告警会在 `--deny-warn` 下升级为错误（`match` 的
 /// 模式分支不算构造）。
+
+///|
+/// 显式构造 `Fatal`。
+///
+/// 为什么需要：`EncodeErrorMode` 虽是 `pub enum`，但变体对**其他包**是只读的，
+/// `cmd/main` 里直接写 `EncodeErrorMode::Html` 会被编译器拒绝
+/// （`Cannot create values of the read-only type: Html`，错误码 4036）。
+/// 故由库提供构造入口，跨包使用统一走这里。
+pub fn encode_error_mode_fatal() -> EncodeErrorMode {
+  Fatal
+}
+
+///|
+/// 显式构造 `Html`（同上：跨包不可直接构造变体）。
+pub fn encode_error_mode_html() -> EncodeErrorMode {
+  Html
+}
+
+///|
+/// 两个错误模式的取值清单（保持既有入口，测试与外部代码都在用）。
 pub fn encode_error_modes() -> Array[EncodeErrorMode] {
   let out : Array[EncodeErrorMode] = [Fatal, Html]
   out

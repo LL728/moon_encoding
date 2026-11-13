@@ -32,6 +32,25 @@ moon run cmd/main --target wasm-gc -- encode windows-1252 \
   "$T/out.txt" "$T/back.bin"
 cmp "$T/in.bin" "$T/back.bin"
 
+# BOM 嗅探（规范 §6.1）：带 UTF-8 BOM 的文件，label 故意给 gbk，--auto 后应解出 "Hi"
+printf '\xEF\xBB\xBF\x48\x69' > "$T/bom8.bin"
+moon run cmd/main --target wasm-gc -- decode gbk \
+  "$T/bom8.bin" "$T/bom8.txt" --auto
+"$PY" -c 'import sys; t = open(sys.argv[1], encoding="utf-8").read(); assert t == "Hi", repr(t)' "$T/bom8.txt"
+
+# BOM 比调用方 label 更有权威：UTF-16LE BOM + U+4E2D，label 给 gbk 仍应解出「中」
+printf '\xFF\xFE\x2D\x4E' > "$T/bom16.bin"
+moon run cmd/main --target wasm-gc -- decode gbk \
+  "$T/bom16.bin" "$T/bom16.txt" --auto
+"$PY" -c 'import sys; t = open(sys.argv[1], encoding="utf-8").read(); assert t == "\u4e2d", repr(t)' "$T/bom16.txt"
+
+# html 错误模式（规范 §4.1）：U+301C 在 ISO-2022-JP 不可映射 -> &#12316;
+printf '\xE3\x80\x9C' > "$T/tilde.txt"
+moon run cmd/main --target wasm-gc -- encode iso-2022-jp \
+  "$T/tilde.txt" "$T/tilde.bin" --html
+printf '&#12316;' > "$T/tilde.expect"
+cmp "$T/tilde.bin" "$T/tilde.expect"
+
 # 未知 label -> 非零退出
 if moon run cmd/main --target wasm-gc -- decode no-such-label \
   "$T/in.bin" "$T/x.txt"; then
