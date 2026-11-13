@@ -101,14 +101,59 @@ match @moon_encoding.Decoder::new("windows-1252") {
 }
 ```
 
+### BOM 嗅探与 html 错误模式
+
+规范 §6.1 的 BOM 钩子与 §4.1 的 `html` 编码错误模式都已提供，且都**不改变** `decode` / `encode` 的既有行为：
+
+```moonbit
+pub fn bom_and_modes(bytes : Bytes, text : String) -> Unit {
+  // 1) 只看前 3 字节：命中返回规范名，否则 None。不消费、不改写输入。
+  match @moon_encoding.bom_sniff(bytes) {
+    Some(name) => println("发现 BOM: " + name)
+    None => println("无 BOM")
+  }
+  // 2) 规范 decode 钩子：BOM 优先于 fallback label，并吞掉 BOM 字节。
+  //    只有 BOM 时返回空串；fallback label 本身仍须合法。
+  match @moon_encoding.decode_auto(bytes, "windows-1252") {
+    Ok(decoded) => println(decoded)
+    Err(e) => println("解码失败: " + @debug.to_string(e))
+  }
+  // 3) html 错误模式：不可映射码点写成 &#十进制; 而非报错。
+  //    规范原文警告该序列无法与合法输入区分、可能静默丢数据，故必须显式选择。
+  match @moon_encoding.encode_with_mode(
+    text,
+    "iso-2022-jp",
+    @moon_encoding.encode_error_mode_html(),
+  ) {
+    Ok(out) => println("\{out.length()} 字节")
+    Err(e) => println("编码失败: " + @debug.to_string(e))
+  }
+}
+```
+
+流式场景用 `Decoder::new_auto(label)`：BOM 可能跨块到达，它会先缓冲到能判定为止，定案后行为与 `Decoder` 一致。
+
+```moonbit
+// chunk : Bytes —— 逐块到达的字节
+match @moon_encoding.Decoder::new_auto("gbk") {
+  Ok(decoder) => {
+    let mut text = ""
+    text = text + decoder.consume(chunk)
+    text = text + decoder.finish()
+  }
+  Err(e) => println("创建解码器失败: " + @debug.to_string(e))
+}
+```
+
 ### 错误类型
 
 ```moonbit
+#derive(Eq, @debug.Debug)
 pub enum EncodingError {
   UnknownLabel(String)           // label 不在标准定义的 228 个之内
   UnsupportedEncoding(String)    // label 合法但规范未定义编码器（replacement / UTF-16BE / UTF-16LE）
   Unmappable(Int, Int)           // 编码遇不可映射字符：码点 + 字符位置
-} derive(Eq, @debug.Debug)
+}
 ```
 
 错误语义对齐 WHATWG 规范（`encoding.bs`）：解码为 **replacement** 模式
