@@ -35,6 +35,14 @@ jobs:
       - name: 格式检查
         run: moon fmt --check
 
+      # 与官方模板一致（check.yml 第 44-47 行的 lint 步骤）：
+      # 公开接口快照必须是 `moon info` 的不动点 —— 接口变更只能体现为
+      # pkg.generated.mbti 的显式 diff，不能悄悄漂移。
+      - name: 接口快照（moon info）
+        run: |
+          moon info
+          git diff --exit-code
+
       # 表与差分向量必须等于生成器产物：重新生成后工作区应零差异
       - name: 生成物新鲜度（表 + 向量 + fmt）
         run: |

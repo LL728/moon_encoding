@@ -1,0 +1,65 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "LL728/moon_encoding"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn bom_sniff(Bytes) -> String?
+
+pub fn decode(Bytes, String) -> Result[String, EncodingError]
+
+pub fn decode_auto(Bytes, String) -> Result[String, EncodingError]
+
+pub fn encode(String, String) -> Result[Bytes, EncodingError]
+
+pub fn encode_error_mode_fatal() -> EncodeErrorMode
+
+pub fn encode_error_mode_html() -> EncodeErrorMode
+
+pub fn encode_error_modes() -> Array[EncodeErrorMode]
+
+pub fn encode_with_mode(String, String, EncodeErrorMode) -> Result[Bytes, EncodingError]
+
+pub fn label_to_encoding(String) -> Result[String, EncodingError]
+
+pub fn supported_encodings() -> Array[String]
+
+// Errors
+
+// Types and methods
+pub struct AutoDecoder {
+  // private fields
+}
+pub fn AutoDecoder::consume(Self, Bytes) -> String
+pub fn AutoDecoder::finish(Self) -> String
+
+pub struct Decoder {
+  // private fields
+}
+pub fn Decoder::consume(Self, Bytes) -> String
+pub fn Decoder::finish(Self) -> String
+pub fn Decoder::new(String) -> Result[Self, EncodingError]
+pub fn Decoder::new_auto(String) -> Result[AutoDecoder, EncodingError]
+
+type DecoderState
+
+pub enum EncodeErrorMode {
+  Fatal
+  Html
+}
+
+#derive(Eq, @debug.Debug)
+pub enum EncodingError {
+  UnknownLabel(String)
+  UnsupportedEncoding(String)
+  Unmappable(Int32, Int32)
+}
+pub fn EncodingError::equal(Self, Self) -> Bool
+pub fn EncodingError::not_equal(Self, Self) -> Bool
+pub fn EncodingError::to_repr(Self) -> @debug.Repr
+
+// Type aliases
+
+// Traits

@@ -3,6 +3,16 @@
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，
 版本号遵循[语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [未发布]
+
+### 仓库工程
+- **接口快照纳入版本控制**：`pkg.generated.mbti` 与 `cmd/main/pkg.generated.mbti`
+  此前被 `.gitignore` 的 `*.generated.mbti` 排除，导致官方 workflow 模板的
+  `moon info && git diff --exit-code` lint 一直处于关闭状态。现已提交入库，
+  并在 CI 增加「接口快照（moon info）」一步：公开 API 的变更必须体现为
+  `.mbti` 的显式 diff，不会悄悄漂移。
+  已实测：`moon info` 幂等（连跑两次零差异）、`moon fmt` 不改写 `.mbti`。
+
 ## [0.3.0] - 2026-11-13
 
 ### 兼容性

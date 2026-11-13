@@ -6,4 +6,6 @@ target
 .moonagent/
 __pycache__/
 *.pyc
-*.generated.mbti
+
+# 接口快照 *.generated.mbti 故意提交入库：CI 用 `moon info && git diff --exit-code`
+# 把公开 API 的变更变成显式 diff（与官方 workflow 模板的 lint 步骤一致）。
