@@ -139,3 +139,83 @@ test "streaming: 1200 deterministic random partitions equal whole-input decode" 
     @test.assert_eq(out, whole)
   }
 }
+
+///|
+test "bom: 三种前缀都命中" {
+  @test.assert_eq(bom_sniff(bytes_of_ints([0xEF, 0xBB, 0xBF])), Some("UTF-8"))
+  @test.assert_eq(bom_sniff(bytes_of_ints([0xFE, 0xFF])), Some("UTF-16BE"))
+  @test.assert_eq(bom_sniff(bytes_of_ints([0xFF, 0xFE])), Some("UTF-16LE"))
+}
+
+///|
+test "bom: 空输入与无 BOM 返回 None" {
+  @test.assert_eq(bom_sniff(bytes_of_ints([])), None)
+  @test.assert_eq(bom_sniff(bytes_of_ints([0x48, 0x49])), None)
+  @test.assert_eq(bom_sniff(bytes_of_ints([0x00])), None)
+}
+
+///|
+// 规范 §6.1 是"peeking 3 bytes"：不足 3 字节时只能匹配 2 字节前缀，不能越界。
+test "bom: 不足 3 字节按可匹配前缀判定" {
+  @test.assert_eq(bom_sniff(bytes_of_ints([0xEF, 0xBB])), None)
+  @test.assert_eq(bom_sniff(bytes_of_ints([0xEF])), None)
+  @test.assert_eq(bom_sniff(bytes_of_ints([0xFE])), None)
+  @test.assert_eq(bom_sniff(bytes_of_ints([0xFF])), None)
+  @test.assert_eq(bom_sniff(bytes_of_ints([0xFE, 0xFF])), Some("UTF-16BE"))
+}
+
+///|
+test "bom: 前三字节不是三种前缀返回 None" {
+  @test.assert_eq(bom_sniff(bytes_of_ints([0xEF, 0xBB, 0xBE])), None)
+  @test.assert_eq(bom_sniff(bytes_of_ints([0xFF, 0xEF])), None)
+  @test.assert_eq(bom_sniff(bytes_of_ints([0x00, 0x00, 0x00])), None)
+}
+
+///|
+test "decode_auto: 无 BOM 时按 fallback label 解码" {
+  // [0x63, 0x61, 0x66, 0xE9] = windows-1252 的 café
+  @test.assert_eq(
+    decode_auto(bytes_of_ints([0x63, 0x61, 0x66, 0xE9]), "windows-1252"),
+    Ok("café"),
+  )
+}
+
+///|
+// Review Focus #2：BOM 比调用方给的 label 更有权威（规范原文）。
+test "decode_auto: BOM 覆盖冲突的 fallback label" {
+  // [0xFF, 0xFE, 0x2D, 0x4E] = UTF-16LE BOM + U+4E2D
+  @test.assert_eq(
+    decode_auto(bytes_of_ints([0xFF, 0xFE, 0x2D, 0x4E]), "gbk"),
+    Ok("\u4e2d"),
+  )
+}
+
+///|
+test "decode_auto: BOM 字节被吞掉，不产出 U+FEFF" {
+  // [0xEF, 0xBB, 0xBF, 0x48, 0x69] = UTF-8 BOM + "Hi"
+  @test.assert_eq(
+    decode_auto(bytes_of_ints([0xEF, 0xBB, 0xBF, 0x48, 0x69]), "gbk"),
+    Ok("Hi"),
+  )
+}
+
+///|
+// Review Focus #3：只有 BOM 时返回空串，不是 U+FEFF，也不是错误。
+test "decode_auto: 只有 BOM 时返回空串" {
+  @test.assert_eq(decode_auto(bytes_of_ints([0xEF, 0xBB, 0xBF]), "gbk"), Ok(""))
+  @test.assert_eq(decode_auto(bytes_of_ints([0xFF, 0xFE]), "gbk"), Ok(""))
+}
+
+///|
+test "decode_auto: 未知 fallback label 仍报 UnknownLabel" {
+  // 规范先解析 fallback encoding，故 BOM 命中也不能跳过 label 校验
+  @test.assert_eq(
+    decode_auto(bytes_of_ints([0xEF, 0xBB, 0xBF, 0x48]), "no-such-label"),
+    Err(EncodingError::UnknownLabel("no-such-label")),
+  )
+}
+
+///|
+test "decode_auto: 空输入返回空串" {
+  @test.assert_eq(decode_auto(bytes_of_ints([]), "gbk"), Ok(""))
+}
