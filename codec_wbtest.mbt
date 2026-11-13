@@ -219,3 +219,65 @@ test "decode_auto: 未知 fallback label 仍报 UnknownLabel" {
 test "decode_auto: 空输入返回空串" {
   @test.assert_eq(decode_auto(bytes_of_ints([]), "gbk"), Ok(""))
 }
+
+///|
+// Review Focus #1：BOM 可能跨 chunk，必须先缓冲，不能提前判「无 BOM」。
+test "new_auto: BOM 跨两个 chunk 也能识别" {
+  let d = match Decoder::new_auto("gbk") {
+    Ok(d) => d
+    Err(e) => abort("unexpected error: " + @debug.to_string(e))
+  }
+  @test.assert_eq(d.consume(bytes_of_ints([0xEF])), "")
+  @test.assert_eq(d.consume(bytes_of_ints([0xBB, 0xBF])), "")
+  @test.assert_eq(d.consume(bytes_of_ints([0x48, 0x69])), "Hi")
+  @test.assert_eq(d.finish(), "")
+}
+
+///|
+test "new_auto: 无 BOM 时首块即按 fallback 透传" {
+  let d = match Decoder::new_auto("windows-1252") {
+    Ok(d) => d
+    Err(e) => abort("unexpected error: " + @debug.to_string(e))
+  }
+  @test.assert_eq(d.consume(bytes_of_ints([0x63, 0x61, 0x66, 0xE9])), "café")
+  @test.assert_eq(d.finish(), "")
+}
+
+///|
+// 首字节不可能是任何 BOM 前缀时必须立刻透传，否则整个流会卡在缓冲里。
+test "new_auto: 首字节不可能是 BOM 前缀时立即透传" {
+  let d = match Decoder::new_auto("windows-1252") {
+    Ok(d) => d
+    Err(e) => abort("unexpected error: " + @debug.to_string(e))
+  }
+  @test.assert_eq(d.consume(bytes_of_ints([0x63])), "c")
+  @test.assert_eq(d.consume(bytes_of_ints([0x61])), "a")
+  @test.assert_eq(d.finish(), "")
+}
+
+///|
+// 流式与一次性必须等价：同段字节一字节一块喂完，结果等于 decode_auto。
+test "new_auto: 流式结果与一次性 decode_auto 相同" {
+  let data = bytes_of_ints([0xFF, 0xFE, 0x2D, 0x4E, 0x4E, 0x2D])
+  let whole = decode_auto(data, "gbk")
+  let d = match Decoder::new_auto("gbk") {
+    Ok(d) => d
+    Err(e) => abort("unexpected error: " + @debug.to_string(e))
+  }
+  let mut out = ""
+  let mut i = 0
+  while i < data.length() {
+    out = out + d.consume(bytes_of_ints([data[i].to_int()]))
+    i = i + 1
+  }
+  out = out + d.finish()
+  @test.assert_eq(Ok(out), whole)
+}
+
+///|
+test "new_auto: 未知 label 报 UnknownLabel" {
+  match Decoder::new_auto("no-such-label") {
+    Err(EncodingError::UnknownLabel(l)) => @test.assert_eq(l, "no-such-label")
+    _ => abort("expected UnknownLabel, got unknown arm")
+  }
+}
