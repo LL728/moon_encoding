@@ -124,7 +124,11 @@ def sanitize(text: str) -> str:
 def run(argv):
     """真实执行一条命令，返回 (显示名, stdout行, stderr首行, exit码)。"""
     env = dict(os.environ)
-    env["PATH"] = str(Path.home() / ".moon" / "bin") + os.pathsep + env.get("PATH", "")
+    # 尊重 MOON_HOME：允许用隔离的工具链生成演示（与 tools/e2e.sh 同一处理）。
+    # 原先硬编码 ~/.moon/bin，会把全局旧工具链顶到最前，导致 demo 内的 moon 命令
+    # 用旧编译器执行而失败（旧版不认 `#derive(...)` 前缀写法）。
+    moon_home = os.environ.get("MOON_HOME") or str(Path.home() / ".moon")
+    env["PATH"] = str(Path(moon_home) / "bin") + os.pathsep + env.get("PATH", "")
     proc = subprocess.run(argv, cwd=ROOT, capture_output=True, env=env)
     out = proc.stdout.decode("utf-8", errors="replace").replace("\r\n", "\n")
     err = proc.stderr.decode("utf-8", errors="replace").replace("\r\n", "\n")

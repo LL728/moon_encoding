@@ -11,13 +11,13 @@
 
 | 分类 | 文件数 | 行数 | 文件 |
 |---|---|---|---|
-| 手写库源码 | 9 | 1912 | `label.mbt`、`single_byte.mbt`、`codec.mbt`、`gbk.mbt`、`utf.mbt`、`euc.mbt`、`multibyte.mbt`、`iso2022.mbt`、`misc.mbt` |
-| CLI | 1 | 91 | `cmd/main/main.mbt` |
-| 手写测试 | 9 | 2584 | 全部 `*_wbtest.mbt`（**不含** `gen_w1252_vectors_wbtest.mbt`） |
+| 手写库源码 | 10 | 2251 | `label.mbt`、`single_byte.mbt`、`codec.mbt`、`gbk.mbt`、`utf.mbt`、`euc.mbt`、`multibyte.mbt`、`iso2022.mbt`、`misc.mbt`、`bom.mbt` |
+| CLI | 1 | 127 | `cmd/main/main.mbt` |
+| 手写测试 | 10 | 2969 | 全部 `*_wbtest.mbt`（**不含** `gen_w1252_vectors_wbtest.mbt`） |
 | 生成物（勿手改） | 7 | 39841 | `gen_label`、`gen_single_byte`、`gen_chinese`、`gen_big5_sjis`、`gen_euc`、`gen_iso2022`、`gen_w1252_vectors_wbtest` |
-| **合计** | **26** | **44428** | `git ls-files "*.mbt"` |
+| **合计** | **28** | **45188** | `git ls-files "*.mbt"` |
 
-**一句话结论**：规范解析、各编码状态机、编解码算法、错误语义与公共 API **全部在 9 个手写文件（1912 行）里**；
+**一句话结论**：规范解析、各编码状态机、编解码算法、错误语义与公共 API **全部在 10 个手写文件（2251 行）里**；
 生成物只承载「索引表」与「差分测试向量」，不含任何算法逻辑，并可由两条命令整批重建：
 
 ```bash
@@ -103,7 +103,7 @@ git ls-files "*.mbt" | ForEach-Object {
 2. **生成物与手写严格分离，并由 CI 钉死。** 表与测试向量可整批重建，
    提交内容必须**逐字节等于**生成器产物（`ci.yml` 的「生成物新鲜度」步骤）。
 3. **手写边界明确。** 规范解析、各编码状态机、编解码算法、错误语义与公共 API
-   全部在第 1 节的 9 个手写文件（1912 行）里；生成物只是可再生成的表与测试向量。
+   全部在第 1 节的 10 个手写文件（2251 行）里；生成物只是可再生成的表与测试向量。
 4. **来源与许可逐项落表。** 见第 3 节，含 pin 版本、许可证与「是否移植」三列。
 
 **能当场回答的设计问题**：为什么把表驱动与状态机分离、为什么解码取 `replacement`
@@ -121,7 +121,7 @@ cd moon_encoding
 moon fmt --check
 moon check --target wasm-gc --deny-warn
 moon build --target wasm-gc
-moon test  --target wasm-gc     # 预期 Total tests: 165, passed: 165, failed: 0.
+moon test  --target wasm-gc     # 预期 Total tests: 189, passed: 189, failed: 0.
 moon test  --target js
 python tools/generate_tables.py && python tools/gen_vectors.py && moon fmt && git diff --exit-code
 bash tools/e2e.sh               # 末行 E2E_ALL_PASS（Windows 用 Git Bash）

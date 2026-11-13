@@ -156,6 +156,6 @@ $ moon run cmd/main -- encode replacement _build/d/ja3.txt _build/d/x.bin
 [exit 1]
 
 $ moon test
-Total tests: 165, passed: 165, failed: 0.
+Total tests: 189, passed: 189, failed: 0.
 [exit 0]
 

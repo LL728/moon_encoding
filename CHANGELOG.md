@@ -11,7 +11,7 @@
   （`syntax error in attribute`，随后表现为 `does not implement trait Eq/Debug`）。
   本次按新格式化器输出改编 `codec.mbt` / `iso2022.mbt` 两处（纯格式，语义不变，2 文件 4 行）。
   已在 `moon 0.1.20261104 (940aa18 2026-11-04)` / `moonc v0.10.20+65efd5b93` 上实测：
-  `fmt --check` / `check --target all --deny-warn` / `build` / `test`（wasm-gc 与 js 各 165 项）/
+  `fmt --check` / `check --target all --deny-warn` / `build` / `test`（wasm-gc 与 js 各 165 项 —— 该提交的基线；本段后续新增后为 189 项）/
   `tools/e2e.sh` 全部通过。README「验证方式」已记录已验证版本与最低要求。
 - `tools/e2e.sh` 的 PATH 前置改为 `${MOON_HOME:-$HOME/.moon}/bin`，使其尊重 `MOON_HOME`
   （未设该变量时行为与之前一致；此前硬编码 `$HOME/.moon/bin`，导致无法用隔离工具链运行本脚本）。
@@ -21,6 +21,24 @@
   等于把 Windows 账号名提交进公开仓库）。改为通用正则 `[A-Za-z]:[\\/]+Users[\\/]+[^\\/\s"']+`，
   对任意盘符 / 任意用户名一律替换为 `<user>`，行为比原先更严格且不再暴露本机信息。
   已用 6 个用例验证（含 `C:\\Users\\<name>`、`D:/Users/<name>`、双反斜杠变体、无路径的普通文本）。
+
+### 规范能力（本期新增）
+- **BOM 嗅探（规范 §6.1）**：`bom_sniff(bytes)` 纯函数、
+  `decode_auto(bytes, fallback_label)`（BOM 优先于 fallback、吞掉 BOM 字节、只有 BOM 时返回空串）、
+  流式 `Decoder::new_auto(label)`（返回 `AutoDecoder`，支持 BOM 跨块）。
+  一次性 `decode()` 行为完全不变（规范把两者分成不同钩子）。
+- **html 编码错误模式（规范 §4.1）**：`encode_with_mode(text, label, mode)` 与
+  `EncodeErrorMode { Fatal, Html }`；`Html` 把不可映射码点写成 `&#十进制;`
+  （U+301C → `&#12316;`），`Fatal` 与 `encode()` 逐字节等价。**默认仍为 fatal**。
+- **CLI**：`decode … --auto` 与 `encode … --html`；不匹配的 flag 直接报错退出，
+  省略时行为与之前一字不差。`tools/e2e.sh` 新增三段断言钉住「BOM 压过 label」与
+  「`&#12316;` 逐字节输出」。
+- **健壮性测试**：固定种子 LCG fuzz（40 编码 × 60 轮，断言不 panic / 无孤立代理 /
+  流式等价）、1 MiB GBK 往返逐字节一致、40 编码单字节解码结果回编码属性。
+  测试数 **165 → 189**。
+- 跨包构造入口 `encode_error_mode_fatal()` / `encode_error_mode_html()`：
+  `pub enum` 的变体对其他包只读，`cmd/main` 直接写 `EncodeErrorMode::Html` 会报
+  `4036 Cannot create values of the read-only type`。
 
 ### 新增
 - `DEVELOPMENT.md`：开发回顾。给出**手写与生成物的逐文件边界**

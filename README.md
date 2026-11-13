@@ -173,7 +173,7 @@ replacement / UTF-16）与全量测试收尾。
 
 ## 验证方式
 
-`moon test` **165 项**，在 wasm-gc 与 js 两个后端上全绿；CI 每次提交都跑格式检查、
+`moon test` **189 项**，在 wasm-gc 与 js 两个后端上全绿；CI 每次提交都跑格式检查、
 `moon check --deny-warn`、构建、双后端测试、生成物新鲜度与命令行端到端。
 
 **工具链（实测记录）**：
@@ -247,7 +247,8 @@ moon fmt && moon check --deny-warn && moon test
 | --- | --- |
 | `label.mbt` | label 解析入口（ASCII 大小写不敏感匹配） |
 | `single_byte.mbt` | 28 种单字节编码共用的表驱动编解码引擎 |
-| `codec.mbt` | 公共 API：`EncodingError`、流式 `Decoder`、`decode` / `encode` |
+| `codec.mbt` | 公共 API：`EncodingError`、流式 `Decoder`、`decode` / `encode` / `encode_with_mode`（`EncodeErrorMode`） |
+| `bom.mbt` | 规范 §6.1 的 BOM 钩子：`bom_sniff` / `decode_auto` / `Decoder::new_auto`（`AutoDecoder`，支持 BOM 跨块） |
 | `gbk.mbt` | GBK/gb18030 状态机与编码器（规范 §gb18030-decoder/encoder 逐条实现） |
 | `utf.mbt` | UTF-8 / 共享 UTF-16 状态机与 UTF-8 编码器（规范 §utf-8 / §14.2.1 `shared UTF-16 decoder` 逐条实现） |
 | `euc.mbt` | EUC-JP / EUC-KR 状态机与编码器（规范 §euc-jp / §euc-kr 逐条实现） |
@@ -269,11 +270,18 @@ moon fmt && moon check --deny-warn && moon test
 - **规范不定义 `replacement` 与 `UTF-16` 的编码器**（`§get an encoder` 断言 encoding
   不是 replacement 或 UTF-16BE/LE）：`encode(..., "replacement" / "utf-16le" / "utf-16be")`
   如实返回 `UnsupportedEncoding`，解码不受影响。
-- 未实现 BOM 嗅探与 `decode()` 的自动 BOM 覆写；label 由调用方显式给出。
-  因此 UTF-16 输入里的 BOM 会作为 U+FEFF 字符解出（与 CPython 的
+- **BOM 嗅探已支持，但 `decode()` 不自动应用**：规范 §6.1 的两个钩子分别由
+  `bom_sniff(bytes)` 与 `decode_auto(bytes, fallback_label)` 提供，流式版是
+  `Decoder::new_auto(label)`（返回 `AutoDecoder`，支持 BOM 跨块）。
+  一次性 `decode(data, label)` **仍然不做** BOM 覆写 —— 这是刻意的：规范把两者分成
+  不同钩子，正是因为 `decode` 无法把「发现了 BOM、你给的 encoding 作废」回传给调用方。
+  故 UTF-16 输入里的 BOM 在 `decode` 下仍作为 U+FEFF 解出（与 CPython 的
   `utf-16-be` / `utf-16-le` 行为一致）。
-- 编码侧只提供 fatal 模式原语；规范中 HTML 表单用的 `&#码点;` 替换模式（html 模式）
-  尚未提供。
+- **两种编码错误模式都已提供**：`encode()` 与 `encode_with_mode(..., Fatal)` 是规范
+  `encode or fail` 的 fatal 原语；`encode_with_mode(..., Html)` 实现规范 §4.1 的
+  `html` 模式，把不可映射码点写成 `&#十进制;`（例：U+301C → `&#12316;`）。
+  **默认仍是 fatal** —— 规范原文指出 `html` 产生的序列无法与合法输入区分、可能造成
+  静默数据丢失，因此必须由调用方显式选择。
 - 单字节编码与 x-user-defined 无跨块状态（replacement 只跨块保留"是否已报过 error"
   两个布尔量）；多字节编码（GBK/Big5/Shift_JIS/EUC/ISO-2022-JP/UTF-16）的挂起状态
   保存在解码器内跨块续传，任意切分等价由"每个切分点 + 随机切分"测试覆盖。
