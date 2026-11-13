@@ -281,3 +281,67 @@ test "new_auto: 未知 label 报 UnknownLabel" {
     _ => abort("expected UnknownLabel, got unknown arm")
   }
 }
+
+///|
+// 规范 §4.1：encoder 的 error mode 只有 "fatal" 与 "html"。
+// 这里先钉死 Fatal 与既有 encode 逐字节等价，保证新增入口不改变旧行为。
+test "encode_with_mode: Fatal 与 encode 完全一致" {
+  @test.assert_eq(
+    encode_with_mode("café", "windows-1252", Fatal),
+    encode("café", "windows-1252"),
+  )
+  @test.assert_eq(
+    encode_with_mode("中文", "windows-1252", Fatal),
+    Err(EncodingError::Unmappable(0x4E2D, 0)),
+  )
+}
+
+///|
+// 规范 §4.1 "html" 分支：push '&' '#' + 最短十进制 + ';'。
+// U+301C 在 jis0208 里不存在（规范用的是 U+FF5E），故 ISO-2022-JP 不可映射 → &#12316;
+test "encode_with_mode: html 模式把不可映射码点写成 &#十进制;" {
+  @test.assert_eq(
+    encode_with_mode("〜", "iso-2022-jp", Html),
+    Ok(bytes_of_ints([0x26, 0x23, 0x31, 0x32, 0x33, 0x31, 0x36, 0x3B])),
+  )
+}
+
+///|
+test "encode_with_mode: html 模式不影响可映射字符" {
+  @test.assert_eq(
+    encode_with_mode("café", "windows-1252", Html),
+    Ok(bytes_of_ints([0x63, 0x61, 0x66, 0xE9])),
+  )
+}
+
+///|
+test "encode_with_mode: html 模式下混排时保留可映射部分" {
+  // "A〜B" → 0x41 + "&#12316;" + 0x42
+  @test.assert_eq(
+    encode_with_mode("A〜B", "iso-2022-jp", Html),
+    Ok(
+      bytes_of_ints([0x41, 0x26, 0x23, 0x31, 0x32, 0x33, 0x31, 0x36, 0x3B, 0x42]),
+    ),
+  )
+}
+
+///|
+// Review Focus #4：错误模式不改变「规范有没有定义编码器」。
+test "encode_with_mode: 规范无编码器的编码仍报 UnsupportedEncoding" {
+  @test.assert_eq(
+    encode_with_mode("x", "replacement", Html),
+    Err(EncodingError::UnsupportedEncoding("replacement")),
+  )
+  @test.assert_eq(
+    encode_with_mode("x", "utf-16le", Html),
+    Err(EncodingError::UnsupportedEncoding("UTF-16LE")),
+  )
+}
+
+///|
+test "encode_with_mode: html 模式下未知 label 报 UnknownLabel" {
+  match encode_with_mode("x", "no-such-label", Html) {
+    Err(EncodingError::UnknownLabel(l)) => @test.assert_eq(l, "no-such-label")
+    _ => abort("expected UnknownLabel, got unknown arm")
+  }
+}

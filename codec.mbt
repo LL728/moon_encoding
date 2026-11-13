@@ -241,3 +241,103 @@ pub fn encode(text : String, label : String) -> Result[Bytes, EncodingError] {
       }
   }
 }
+
+///|
+/// 编码错误模式（规范 §4.1）。规范原文：
+/// `An error mode ... is "replacement" or "fatal" for a decoder and
+///  "fatal" or "html" for an encoder.`
+///
+/// `Html` 仅因 HTML 表单需要非终止编码器而存在；规范同时警告它产生的序列
+/// **无法与合法输入区分、可能造成静默数据丢失**，故本库默认 `Fatal`，
+/// `Html` 必须由调用方显式选择。
+pub enum EncodeErrorMode {
+  Fatal
+  Html
+}
+
+///|
+/// 两个错误模式的取值清单。
+///
+/// 存在的唯一目的是让两种变体在库编译单元里各被**构造**一次 —— 否则
+/// `unused_constructor` 告警会在 `--deny-warn` 下升级为错误（`match` 的
+/// 模式分支不算构造）。
+pub fn encode_error_modes() -> Array[EncodeErrorMode] {
+  let out : Array[EncodeErrorMode] = [Fatal, Html]
+  out
+}
+
+///|
+/// 规范 §4.1 的 `&#码点;` 形式（html 错误模式）：`&` `#` + 最短十进制 + `;`。
+/// 码点 0 也要输出 `&#0;`，不能输出空串。
+fn decimal_ref_bytes(cp : Int32) -> Array[Byte] {
+  let out : Array[Byte] = []
+  // 数值字面量必须加括号再调方法：`0x26.to_byte()` 的 `0x26.` 会被解析成浮点字面量。
+  out.push((0x26).to_byte())
+  out.push((0x23).to_byte())
+  let digits : Array[Int32] = []
+  // 本工具链里 Int32 与 Int 是同一类型（moon fmt 会把 Int 重写为 Int32），
+  // 故不能对 Int32 调 to_int()（报 "Type Int has no method to_int"）。
+  let mut v = cp
+  if v == 0 {
+    digits.push(0)
+  } else {
+    while v > 0 {
+      digits.push(v % 10)
+      v = v / 10
+    }
+  }
+  let mut i = digits.length() - 1
+  while i >= 0 {
+    out.push((0x30 + digits[i]).to_byte())
+    i = i - 1
+  }
+  out.push((0x3B).to_byte())
+  out
+}
+
+///|
+/// 按显式错误模式编码。`Fatal` 与 `encode` 逐字节等价；
+/// `Html` 把每个不可映射码点写成 `&#十进制;` 的 ASCII 字节并继续编码后续字符，
+/// 对应规范 `process an item` 的 `"html"` 分支。
+///
+/// 规范无编码器的编码（`replacement` / `UTF-16BE` / `UTF-16LE`）在任何模式下
+/// 都报 `UnsupportedEncoding` —— 错误模式不改变「有没有编码器」这件事。
+pub fn encode_with_mode(
+  text : String,
+  label : String,
+  mode : EncodeErrorMode,
+) -> Result[Bytes, EncodingError] {
+  match mode {
+    Fatal => encode(text, label)
+    Html => {
+      // 先验证 label 合法且有编码器：空串对可编码 label 返回空字节，
+      // 对无编码器的编码报 UnsupportedEncoding，对未知 label 报 UnknownLabel。
+      match encode("", label) {
+        Err(e) => return Err(e)
+        Ok(_) => ()
+      }
+      // 逐字符委托既有编码器。取舍（写清，免得被当成漏优化）：
+      // - 无状态编码（单字节 / GBK / gb18030 / Big5 / Shift_JIS / EUC-JP / EUC-KR / UTF-8）
+      //   逐字符与整段严格等价；
+      // - ISO-2022-JP 有状态，逐字符会为每个非 ASCII 字符各自输出 `ESC $ B … ESC ( B`，
+      //   输出更冗长但每条序列都以回归 ASCII 结束，拼接后仍是合法流；
+      // - 每个字符都重新解析一次 label，O(n) 次解析 —— html 模式是低频的 HTML 表单路径，可接受。
+      let out : Array[Byte] = []
+      for c in text {
+        let one = String::from_iter([c].iter())
+        match encode(one, label) {
+          Ok(bs) =>
+            for i in 0..<bs.length() {
+              out.push(bs[i])
+            }
+          Err(EncodingError::Unmappable(cp, _)) =>
+            for b in decimal_ref_bytes(cp) {
+              out.push(b)
+            }
+          Err(e) => return Err(e)
+        }
+      }
+      Ok(Bytes::from_array(out.exact_view()))
+    }
+  }
+}
